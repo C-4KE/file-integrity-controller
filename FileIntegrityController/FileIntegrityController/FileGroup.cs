@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace FileIntegrityController
 {
@@ -35,6 +34,11 @@ namespace FileIntegrityController
             {
                 return _filesHashes;
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (_diskName == ((FileGroup)obj)._diskName) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
         }
     }
 }
