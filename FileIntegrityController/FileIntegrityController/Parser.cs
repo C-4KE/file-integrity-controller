@@ -8,14 +8,14 @@ namespace FileIntegrityController
     /**
      * <summary>Класс, считывающий пары (имя_файла : хеш) из Json файла, а также сортирующий пары по дискам.</summary>
      */
-    class Parser
+    public class Parser
     {
         /**
          * <summary>Метод, который считывает пары (имя_файла : хеш) из JSON'а.</summary>
          * <param name="jsonPath">Путь к JSON файлу.</param>
          * <returns>Словарь с парами (имя_файла : хеш).</returns>
          */
-        static Dictionary<string, string> ParseJSON(string jsonPath)
+        public static Dictionary<string, string> ParseJSON(string jsonPath)
         {
             Dictionary<string, string> fileHash;
             if (File.Exists(jsonPath))
