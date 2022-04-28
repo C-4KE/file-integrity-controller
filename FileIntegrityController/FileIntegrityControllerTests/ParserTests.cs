@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -78,6 +77,47 @@ namespace FileIntegrityControllerTests
 
             // Act
             Dictionary<string, string> actual = Parser.ParseJSON(jsonPath);
+
+            // Assert
+            Assert.IsNull(actual);
+        }
+
+        [TestMethod]
+        public void GetDriveInfo_ExistingFile_ReturnIsDriveInfo()
+        {
+            // Arrange
+            string testFilePath = "./Test.txt";
+            using (FileStream fstream = new FileStream(testFilePath, FileMode.Create)) { }
+            DriveInfo expected = new DriveInfo((new FileInfo(testFilePath)).Directory.Root.FullName);
+
+            // Act
+            DriveInfo actual = Parser.GetDriveInfo(testFilePath);
+
+            // Assert
+            Assert.IsTrue(DriveInfoEquality(expected, actual));
+            File.Delete(testFilePath);
+        }
+
+        private bool DriveInfoEquality(DriveInfo first, DriveInfo second)
+        {
+            return (first.AvailableFreeSpace == second.AvailableFreeSpace) &&
+                   (first.DriveFormat == second.DriveFormat) &&
+                   (first.DriveType == second.DriveType) &&
+                   (first.IsReady == second.IsReady) &&
+                   (first.Name == second.Name) &&
+                   (first.TotalFreeSpace == second.TotalFreeSpace) &&
+                   (first.TotalSize == second.TotalSize) &&
+                   (first.VolumeLabel == second.VolumeLabel);
+        }
+
+        [TestMethod]
+        public void GetDriveInfo_NotexistingFile_ReturnIsNull()
+        {
+            // Arrange
+            string fakePath = "Incorrect path";
+
+            // Act
+            DriveInfo actual = Parser.GetDriveInfo(fakePath);
 
             // Assert
             Assert.IsNull(actual);
