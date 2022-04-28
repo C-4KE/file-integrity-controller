@@ -4,10 +4,10 @@ using System.Text;
 
 namespace FileIntegrityController
 {
-    class FileGroup
+    public class FileGroup
     {
-        string _diskName;
-        Dictionary<string, string> _filesHashes;
+        private string _diskName;
+        private Dictionary<string, string> _filesHashes;
 
         public FileGroup(string diskName, Dictionary<string, string> filesHashes)
         {
