@@ -117,7 +117,7 @@ namespace FileIntegrityController
          * <param name="path">Путь к файлу</param>
          * <returns>Объект DriveInfo, если файл существует. В обратном случае - null.</returns>
          */
-        private static DriveInfo GetDriveInfo(string path)
+        public static DriveInfo GetDriveInfo(string path)
         {
             return File.Exists(path) ? new DriveInfo((new FileInfo(path)).Directory.Root.FullName) : null;
         }
