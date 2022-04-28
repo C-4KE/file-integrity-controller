@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileIntegrityController", "FileIntegrityController\FileIntegrityController.csproj", "{BE084CE3-E1E3-441A-A7FB-E1DE38CBBA24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileIntegrityController", "FileIntegrityController\FileIntegrityController.csproj", "{BE084CE3-E1E3-441A-A7FB-E1DE38CBBA24}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileIntegrityControllerTests", "FileIntegrityControllerTests\FileIntegrityControllerTests.csproj", "{453B0E9E-523B-4F48-851C-28FDC7FE629E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{BE084CE3-E1E3-441A-A7FB-E1DE38CBBA24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE084CE3-E1E3-441A-A7FB-E1DE38CBBA24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE084CE3-E1E3-441A-A7FB-E1DE38CBBA24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{453B0E9E-523B-4F48-851C-28FDC7FE629E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{453B0E9E-523B-4F48-851C-28FDC7FE629E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{453B0E9E-523B-4F48-851C-28FDC7FE629E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{453B0E9E-523B-4F48-851C-28FDC7FE629E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
