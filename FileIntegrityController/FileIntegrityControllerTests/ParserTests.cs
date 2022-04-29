@@ -17,21 +17,21 @@ namespace FileIntegrityControllerTests
         {
             // Arrange
             string jsonPath = "./TestJSON.json";
-            Dictionary<string, string> expexted = new Dictionary<string, string>();
-            expexted.Add("TestPath", "TestHash");
-            JsonSerializer.Serialize(expexted, new JsonSerializerOptions { WriteIndented = true });
+            Dictionary<string, string> expected = new Dictionary<string, string>();
+            expected.Add("TestPath", "TestHash");
+            JsonSerializer.Serialize(expected, new JsonSerializerOptions { WriteIndented = true });
             using (FileStream fstream = new FileStream(jsonPath, FileMode.Create))
             {
                 fstream.Seek(0, SeekOrigin.End);
                 var options = new JsonSerializerOptions { WriteIndented = true };
-                fstream.Write(JsonSerializer.SerializeToUtf8Bytes(expexted, options));
+                fstream.Write(JsonSerializer.SerializeToUtf8Bytes(expected, options));
             }
 
             // Act
             Dictionary<string, string> actual = Parser.ParseJSON(jsonPath);
 
             // Assert
-            Assert.IsTrue(expexted.Count == actual.Count && !expexted.Except(actual).Any());
+            Assert.IsTrue(expected.Count == actual.Count && !expected.Except(actual).Any());
             File.Delete(jsonPath);
         }
 
