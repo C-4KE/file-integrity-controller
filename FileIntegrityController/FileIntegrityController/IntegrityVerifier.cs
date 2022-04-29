@@ -13,7 +13,7 @@ namespace FileIntegrityController
         /**
          * <summary>Метод, который проверяет целостность одного файла.</summary>
          * <param name="fileHash">Пара (путь_к_файлу : хеш)</param>
-         * <returns>Вовзращает true, если файл не изменён (снова подсчитанный хеш равен данному в Json), иначе - возвращает false.</returns>
+         * <returns>Возвращает true, если файл не изменён (снова подсчитанный хеш равен данному в Json), иначе - возвращает false.</returns>
          */
         public static bool VerifyFile(KeyValuePair<string, string> fileHash)
         {
@@ -39,6 +39,24 @@ namespace FileIntegrityController
                 }
             }
             return result;
+        }
+
+        /**
+         * <summary>Метод, который проверяет все файлы одного диска в одном потоке.</summary>
+         * <param name="fileGroup">Группа файлов, принадлежащая одному диску.</param>
+         * <returns>Возвращает список путей к файлам, которые были изменены.</returns>
+         */
+        public static List<string> VerifyGroupSingleThread(FileGroup fileGroup)
+        {
+            List<string> invalidFiles = new List<string>();
+            foreach (KeyValuePair<string, string> fileHash in fileGroup.FilesHashes)
+            {
+                if (!VerifyFile(fileHash)) // Если файл изменён
+                {
+                    invalidFiles.Add(fileHash.Key);
+                }
+            }
+            return invalidFiles;
         }
     }
 }
