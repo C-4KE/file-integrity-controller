@@ -22,15 +22,15 @@ namespace FileIntegrityController
          * - По SerialNumber ищется объект в коллекции объектов MSFT_PhysicalDisc. В найденном объекте берётся поле MediaType.
          * Если оно равно 4, то носитель - SSD. Иначе - нет.
          * </remarks>
-         * <param name="driveInfo">Объект DriveInfo, хранящий данные о проверяемом носителе.</param>
+         * <param name="fileGroup">Объект FileGroup, хранящий имя диска.</param>
          * <returns>Возвращает true, если носитель - SSD. Иначе - false.</returns>
          */
-        public static bool IsSSD(DriveInfo driveInfo)
+        public static bool IsSSD(FileGroup fileGroup)
         {
             bool isSSD = false;
             try
             {
-                string driveName = driveInfo.Name.Split(new char[] { ':' })[0];
+                string driveName = fileGroup.DiskName.Split(new char[] { ':' })[0];
                 string uniqueId = "";
                 var rawDiskInfos = new ManagementObjectSearcher("root\\Microsoft\\Windows\\Storage", "SELECT * FROM MSFT_Partition");
                 foreach (var rawDiskInfo in rawDiskInfos.Get())
@@ -62,7 +62,7 @@ namespace FileIntegrityController
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"Error while checking {driveInfo.Name} disk: {exc.Message}");
+                Console.WriteLine($"Error while checking {fileGroup.DiskName} disk: {exc.Message}");
             }
             return isSSD;
         }
