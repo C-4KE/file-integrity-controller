@@ -8,7 +8,7 @@ namespace FileIntegrityController
     /**
      * <summary>Класс, распределяющий проверку целостности в зависимости от типа носителя.</summary>
      */
-    public class Distributer
+    public class Distributor
     {
         /**
          * <summary>Метод, проверяющий является ли носитель SSD.</summary>
