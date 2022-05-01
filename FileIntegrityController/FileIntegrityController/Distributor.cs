@@ -71,7 +71,7 @@ namespace FileIntegrityController
          * <param name="fileGroup">Группа файлов, которая будет проверяться на целостность.</param>
          * <returns>Возвращает список файлов, не прошедших проверку на целостность.</returns>
          */
-        public List<string> DistributeToThreads(FileGroup fileGroup)
+        public static List<string> DistributeToThreads(FileGroup fileGroup)
         {
             List<string> invalidFiles = new List<string>();
             int numberOfThreads = fileGroup.FilesHashes.Count / 2;
