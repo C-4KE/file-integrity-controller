@@ -22,6 +22,7 @@ namespace FileIntegrityController
          * Если оно равно 4, то носитель - SSD. Иначе - нет.
          * </remarks>
          * <param name="fileGroup">Объект FileGroup, хранящий имя диска.</param>
+         * <param name="storageInfo">Класс, содержащий информацию для определнения типа носителя.</param>
          * <returns>Возвращает true, если носитель - SSD. Иначе - false.</returns>
          */
         public static bool IsSSD(FileGroup fileGroup, StorageInfo storageInfo)
