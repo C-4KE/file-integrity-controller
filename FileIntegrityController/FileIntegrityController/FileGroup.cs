@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace FileIntegrityController
 {
@@ -41,7 +42,21 @@ namespace FileIntegrityController
 
         public override bool Equals(object obj)
         {
-            return (_diskName == ((FileGroup)obj)._diskName) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
+            bool answer = (_diskName == ((FileGroup)obj)._diskName) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
+            Console.WriteLine(answer);
+            return answer;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 0;
+            hash += _diskName.GetHashCode();
+            foreach (KeyValuePair<string, string> fileHash in _filesHashes)
+            {
+                hash += fileHash.Key.GetHashCode();
+                hash += fileHash.Value.GetHashCode();
+            }
+            return hash;
         }
 
         /**
