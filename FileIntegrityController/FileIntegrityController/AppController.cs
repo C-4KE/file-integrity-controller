@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Configuration;
+using System.IO;
 
 namespace FileIntegrityController
 {
@@ -9,44 +11,48 @@ namespace FileIntegrityController
      */
     public class AppController
     {
-        static private string _jsonPath = "";
-
         /**
          * <summary>Метод, управляющий ходом работы программы.</summary>
          */
         async public static void ManageApp()
         {
-            // Получение данных из JSON файла
             Console.WriteLine("Program has started.");
-            Console.WriteLine("Parsing JSON...");
-            Dictionary<string, string> filesHashes = Parser.ParseJSON(_jsonPath);
-            if (filesHashes.Count != 0)
+            // Получение адреса JSON файла из config файла.
+            Console.WriteLine("Reading a path to JSON file from config...");
+            string jsonPath = ReadConfig();
+            if (jsonPath != null)
             {
-                Console.WriteLine("Sorting files by disks...");
-                FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
-
-                // Подготовка к запуску проверки
-                StorageInfo storageInfo = new StorageInfo();
-                List<string>[] invalidFiles = new List<string>[fileGroups.Length];
-                Task<List<string>>[] tasks = new Task<List<string>>[fileGroups.Length];
-
-                Console.WriteLine("Starting integrity verifying...");
-                // Запуск проверки
-                for (int i = 0; i < fileGroups.Length; i++)
+                // Получение данных из JSON файла
+                Console.WriteLine("Parsing JSON...");
+                Dictionary<string, string> filesHashes = Parser.ParseJSON(jsonPath);
+                if (filesHashes.Count != 0)
                 {
-                    tasks[i] = Distributor.DistributeAsync(fileGroups[i], storageInfo);
-                }
-                for (int i = 0; i < fileGroups.Length; i++)
-                {
-                    invalidFiles[i] = await tasks[i];
-                }
+                    Console.WriteLine("Sorting files by disks...");
+                    FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
 
-                // Вывод результата проверки на экран
-                PrintResult(fileGroups, invalidFiles);
-            }
-            else
-            {
-                Console.WriteLine("There are no files to check.");
+                    // Подготовка к запуску проверки
+                    StorageInfo storageInfo = new StorageInfo();
+                    List<string>[] invalidFiles = new List<string>[fileGroups.Length];
+                    Task<List<string>>[] tasks = new Task<List<string>>[fileGroups.Length];
+
+                    Console.WriteLine("Starting integrity verifying...");
+                    // Запуск проверки
+                    for (int i = 0; i < fileGroups.Length; i++)
+                    {
+                        tasks[i] = Distributor.DistributeAsync(fileGroups[i], storageInfo);
+                    }
+                    for (int i = 0; i < fileGroups.Length; i++)
+                    {
+                        invalidFiles[i] = await tasks[i];
+                    }
+
+                    // Вывод результата проверки на экран
+                    PrintResult(fileGroups, invalidFiles);
+                }
+                else
+                {
+                    Console.WriteLine("There are no files to check.");
+                }
             }
         }
 
@@ -81,6 +87,28 @@ namespace FileIntegrityController
                     Console.WriteLine("");
                 }
             }
+        }
+
+        /**
+         * <summary>Метод, считывающий путь к JSON файлу из config файла.</summary>
+         * <returns>Путь к JSON файлу, если чтение произошло успешно и JSON файл существует. Иначе - возвращает null.</returns>
+         */
+        public static string ReadConfig()
+        {
+            string jsonPath = ConfigurationManager.AppSettings.Get("JSONPath");
+            if (jsonPath == null)
+            {
+                Console.WriteLine("Program has failed to read a path to JSON file.");
+            }
+            else
+            {
+                if (!File.Exists(jsonPath))
+                {
+                    Console.WriteLine("File \"" + jsonPath + "\" does not exist.");
+                    jsonPath = null;
+                }
+            }
+            return jsonPath;
         }
     }
 }
