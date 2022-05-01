@@ -83,6 +83,10 @@ namespace FileIntegrityController
                         counter = 0;
                     }
                 }
+                if (counter != 0)
+                {
+                    fileGroups.Add(tempGroup);
+                }
             }
             else
             {
