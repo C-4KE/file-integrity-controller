@@ -112,11 +112,11 @@ namespace FileIntegrityController
         {
             if (IsSSD(fileGroup, storageInfo))
             {
-                return await Task<List<string>>.Run(() => DistributeToThreads(fileGroup));
+                return DistributeToThreads(fileGroup);
             }
             else
             {
-                return await Task<List<string>>.Run(() => IntegrityVerifier.VerifyGroup(fileGroup));
+                return IntegrityVerifier.VerifyGroup(fileGroup);
             }
         }
     }
