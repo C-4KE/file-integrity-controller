@@ -123,7 +123,7 @@ namespace FileIntegrityControllerTests
             FileGroup fileGroup = new FileGroup(Parser.GetDriveInfo(testFilePath1).Name, filesHashes);
 
             // Act
-            List<string> actual = IntegrityVerifier.VerifyGroupSingleThread(fileGroup);
+            List<string> actual = IntegrityVerifier.VerifyGroup(fileGroup);
 
             // Assert
             Assert.IsTrue(actual.Count == 0);
@@ -171,7 +171,7 @@ namespace FileIntegrityControllerTests
             expected.Add(testFilePath2);
 
             // Act
-            List<string> actual = IntegrityVerifier.VerifyGroupSingleThread(fileGroup);
+            List<string> actual = IntegrityVerifier.VerifyGroup(fileGroup);
 
             // Assert
             Assert.IsTrue(expected.Count == actual.Count && !expected.Except(actual).Any());
@@ -224,7 +224,7 @@ namespace FileIntegrityControllerTests
             expected.Add(testFilePath2);
 
             // Act
-            List<string> actual = IntegrityVerifier.VerifyGroupSingleThread(fileGroup);
+            List<string> actual = IntegrityVerifier.VerifyGroup(fileGroup);
 
             // Assert
             Assert.IsTrue(expected.Count == actual.Count && !expected.Except(actual).Any());

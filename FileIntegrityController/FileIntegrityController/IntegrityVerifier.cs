@@ -46,7 +46,7 @@ namespace FileIntegrityController
          * <param name="fileGroup">Группа файлов, принадлежащая одному диску.</param>
          * <returns>Возвращает список путей к файлам, которые были изменены.</returns>
          */
-        public static List<string> VerifyGroupSingleThread(FileGroup fileGroup)
+        public static List<string> VerifyGroup(FileGroup fileGroup)
         {
             List<string> invalidFiles = new List<string>();
             foreach (KeyValuePair<string, string> fileHash in fileGroup.FilesHashes)
