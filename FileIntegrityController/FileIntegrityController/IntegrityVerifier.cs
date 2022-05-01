@@ -12,8 +12,8 @@ namespace FileIntegrityController
     {
         /**
          * <summary>Метод, который проверяет целостность одного файла.</summary>
-         * <param name="fileHash">Пара (путь_к_файлу : хеш)</param>
-         * <returns>Возвращает true, если файл не изменён (снова подсчитанный хеш равен данному в Json), иначе - возвращает false.</returns>
+         * <param name="fileHash">Пара (путь_к_файлу : хэш)</param>
+         * <returns>Возвращает true, если файл не изменён (снова подсчитанный хэш равен данному в Json), иначе - возвращает false.</returns>
          */
         public static bool VerifyFile(KeyValuePair<string, string> fileHash)
         {

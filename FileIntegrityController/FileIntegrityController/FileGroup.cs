@@ -5,7 +5,7 @@ using System;
 namespace FileIntegrityController
 {
     /**
-     * <summary>Класс, хранящий коллекцию пар (путь_к_файлу : хеш) для файлов, лежащих на одном диске.</summary>
+     * <summary>Класс, хранящий коллекцию пар (путь_к_файлу : хэш) для файлов, лежащих на одном диске.</summary>
      */
     public class FileGroup
     {
@@ -19,7 +19,7 @@ namespace FileIntegrityController
         }
 
         /**
-         * <value>Имя диска, на котором находятся файлы, чьи пути и хеши хранятся в этом объекте.</value>
+         * <value>Имя диска, на котором находятся файлы, чьи пути и хэши хранятся в этом объекте.</value>
          */
         public string DiskName
         {
@@ -30,7 +30,7 @@ namespace FileIntegrityController
         }
 
         /**
-         * <value>Словарь с парами (имя_файла : хеш), хранящиеся на одном диске.</value>
+         * <value>Словарь с парами (имя_файла : хэш), хранящиеся на одном диске.</value>
          */
         public Dictionary<string, string> FilesHashes
         {

@@ -6,14 +6,14 @@ using System.Text.Json;
 namespace FileIntegrityController
 {
     /**
-     * <summary>Класс, считывающий пары (имя_файла : хеш) из Json файла, а также сортирующий пары по дискам.</summary>
+     * <summary>Класс, считывающий пары (имя_файла : хэш) из Json файла, а также сортирующий пары по дискам.</summary>
      */
     public class Parser
     {
         /**
-         * <summary>Метод, который считывает пары (имя_файла : хеш) из JSON'а.</summary>
+         * <summary>Метод, который считывает пары (имя_файла : хэш) из JSON'а.</summary>
          * <param name="jsonPath">Путь к JSON файлу.</param>
-         * <returns>Словарь с парами (имя_файла : хеш).</returns>
+         * <returns>Словарь с парами (имя_файла : хэш).</returns>
          */
         public static Dictionary<string, string> ParseJSON(string jsonPath)
         {
@@ -48,9 +48,9 @@ namespace FileIntegrityController
         }
 
         /**
-         * <summary>Метод, сортирующий словарь с парами (имя_файла : хеш) по дискам.</summary>
+         * <summary>Метод, сортирующий словарь с парами (имя_файла : хэш) по дискам.</summary>
          * <remarks>Если входной словарь не пустой, но содержит пары с несуществующими файлами / некорректными ключами, то онине добавляются в выходной массив.</remarks>
-         * <param name="filesHashes">Словарь с парами (имя_файла : хеш).</param>
+         * <param name="filesHashes">Словарь с парами (имя_файла : хэш).</param>
          * <returns>Возвращает массив объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
          */
         public static FileGroup[] SortFilesByDisks(Dictionary<string, string> filesHashes)
