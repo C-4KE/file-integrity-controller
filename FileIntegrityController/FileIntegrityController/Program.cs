@@ -1,12 +1,12 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 
 namespace FileIntegrityController
 {
     class Program
     {
-        static void Main(string[] args)
+        async static Task Main(string[] args)
         {
-
+            AppController.ManageApp();
         }
     }
 }
