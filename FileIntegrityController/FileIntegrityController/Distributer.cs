@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.IO;
 using System.Management;
+using System.Threading;
 
 namespace FileIntegrityController
 {
@@ -65,6 +64,43 @@ namespace FileIntegrityController
                 Console.WriteLine($"Error while checking {fileGroup.DiskName} disk: {exc.Message}");
             }
             return isSSD;
+        }
+
+        /**
+         * <summary>Метод, распределяющий проверку целостности группы файлов по потокам.</summary>
+         * <param name="fileGroup">Группа файлов, которая будет проверяться на целостность.</param>
+         * <returns>Возвращает список файлов, не прошедших проверку на целостность.</returns>
+         */
+        public List<string> DistributeToThreads(FileGroup fileGroup)
+        {
+            List<string> invalidFiles = new List<string>();
+            int numberOfThreads = fileGroup.FilesHashes.Count / 2;
+            if (numberOfThreads > 1)
+            {
+                numberOfThreads = numberOfThreads > Environment.ProcessorCount ? Environment.ProcessorCount : numberOfThreads;
+                List<FileGroup> fileGroups = fileGroup.Split((uint)numberOfThreads);
+                List<IntegrityVerifierThread> dataThreads = new List<IntegrityVerifierThread>();
+                foreach (FileGroup group in fileGroups)
+                {
+                    dataThreads.Add(new IntegrityVerifierThread(group));
+                }
+                foreach (IntegrityVerifierThread dataThread in dataThreads)
+                {
+                    Thread newThread = new Thread(() => dataThread.VerifyFiles());
+                    newThread.Start();
+                    dataThread.Thread = newThread;
+                }
+                foreach (IntegrityVerifierThread dataThread in dataThreads)
+                {
+                    dataThread.Thread.Join();
+                    invalidFiles.AddRange(dataThread.InvalidFiles);
+                }
+            }
+            else
+            {
+                invalidFiles = IntegrityVerifier.VerifyGroup(fileGroup);
+            }
+            return invalidFiles;
         }
     }
 }
