@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Threading;
 
 namespace FileIntegrityController
 {
@@ -12,6 +11,7 @@ namespace FileIntegrityController
         // Поля
         private FileGroup _fileGroup;
         private List<string> _invalidFiles;
+        private Thread _thread;
 
         /**
          * <value>Группа файлов.</value>
@@ -25,13 +25,28 @@ namespace FileIntegrityController
         }
 
         /**
-         * <value>Список фалов, проваливших проверку на целостность.</value>
+         * <value>Список файлов, проваливших проверку на целостность.</value>
          */
         public List<string> InvalidFiles
         {
             get
             {
                 return _invalidFiles;
+            }
+        }
+
+        /**
+         * <summary>Ссылка на поток, использующий данные этого объекта.</summary>
+         */
+        public Thread Thread
+        {
+            get
+            {
+                return _thread;
+            }
+            set
+            {
+                _thread = value;
             }
         }
 
