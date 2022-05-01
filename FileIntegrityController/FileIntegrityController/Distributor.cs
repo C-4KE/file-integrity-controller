@@ -24,15 +24,14 @@ namespace FileIntegrityController
          * <param name="fileGroup">Объект FileGroup, хранящий имя диска.</param>
          * <returns>Возвращает true, если носитель - SSD. Иначе - false.</returns>
          */
-        public static bool IsSSD(FileGroup fileGroup)
+        public static bool IsSSD(FileGroup fileGroup, StorageInfo storageInfo)
         {
             bool isSSD = false;
             try
             {
                 string driveName = fileGroup.DiskName.Split(new char[] { ':' })[0];
                 string uniqueId = "";
-                var rawDiskInfos = new ManagementObjectSearcher("root\\Microsoft\\Windows\\Storage", "SELECT * FROM MSFT_Partition");
-                foreach (var rawDiskInfo in rawDiskInfos.Get())
+                foreach (var rawDiskInfo in storageInfo.MSFTPartition.Get())
                 {
                     if (rawDiskInfo["DriveLetter"].ToString() == driveName)
                     {
@@ -41,8 +40,7 @@ namespace FileIntegrityController
                     }
                 }
                 string serialNumber = "";
-                rawDiskInfos = new ManagementObjectSearcher("root\\Microsoft\\Windows\\Storage", "SELECT * FROM MSFT_Disk");
-                foreach (var rawDiskInfo in rawDiskInfos.Get())
+                foreach (var rawDiskInfo in storageInfo.MSFTDisk.Get())
                 {
                     if (rawDiskInfo["UniqueId"].ToString() == uniqueId)
                     {
@@ -50,8 +48,7 @@ namespace FileIntegrityController
                         break;
                     }
                 }
-                rawDiskInfos = new ManagementObjectSearcher("root\\Microsoft\\Windows\\Storage", "SELECT * FROM MSFT_PhysicalDisk");
-                foreach (var rawDiskInfo in rawDiskInfos.Get())
+                foreach (var rawDiskInfo in storageInfo.MSFTPhysicalDisk.Get())
                 {
                     if (rawDiskInfo["SerialNumber"].ToString().Trim() == serialNumber)
                     {
