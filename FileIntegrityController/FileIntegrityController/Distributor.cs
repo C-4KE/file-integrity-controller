@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Management;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FileIntegrityController
 {
@@ -99,6 +100,24 @@ namespace FileIntegrityController
                 invalidFiles = IntegrityVerifier.VerifyGroup(fileGroup);
             }
             return invalidFiles;
+        }
+
+        /**
+         * <summary>Асинхронный метод, вызывающий однопоточную или многопоточную проверку целостности в зависимости от типа носителя.</summary>
+         * <param name="fileGroup">Группа файлов, которую необходимо проверить.</param>
+         * <param name="storageInfo">Информация о носителях, запрошенная из ОС.</param>
+         * <returns>Возвращает список файлов, не прошедших проверку на целостность.</returns>
+         */
+        async public static Task<List<string>> DistributeAsync(FileGroup fileGroup, StorageInfo storageInfo)
+        {
+            if (IsSSD(fileGroup, storageInfo))
+            {
+                return await Task<List<string>>.Run(() => DistributeToThreads(fileGroup));
+            }
+            else
+            {
+                return await Task<List<string>>.Run(() => IntegrityVerifier.VerifyGroup(fileGroup));
+            }
         }
     }
 }
