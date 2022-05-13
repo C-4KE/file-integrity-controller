@@ -49,7 +49,7 @@ namespace FileIntegrityController
 
         /**
          * <summary>Метод, сортирующий словарь с парами (имя_файла : хэш) по дискам.</summary>
-         * <remarks>Если входной словарь не пустой, но содержит пары с несуществующими файлами / некорректными ключами, то онине добавляются в выходной массив.</remarks>
+         * <remarks>Если входной словарь не пустой, но содержит пары с несуществующими файлами / некорректными ключами, то они не добавляются в выходной массив.</remarks>
          * <param name="filesHashes">Словарь с парами (имя_файла : хэш).</param>
          * <returns>Возвращает массив объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
          */
@@ -58,7 +58,7 @@ namespace FileIntegrityController
             if (filesHashes.Count != 0)
             {
                 FileGroup[] fileGroups = null;
-                List<string> disks = new List<string>();
+                Dictionary<string, FileGroup> volumeGroup = new Dictionary<string, FileGroup>();
                 foreach (KeyValuePair<string, string> fileHash in filesHashes)
                 {
                     try
@@ -66,31 +66,42 @@ namespace FileIntegrityController
                         DriveInfo driveInfo = GetDriveInfo(fileHash.Key);
                         if (driveInfo != null)
                         {
-                            string drive = driveInfo.Name;
-                            if (disks.Contains(drive))
+                            string volume = driveInfo.Name;
+                            if (volumeGroup.ContainsKey(volume))    // Уже встречали файл на этом разделе
                             {
+                                FileGroup fileGroup;
+                                volumeGroup.TryGetValue(volume, out fileGroup);
+                                fileGroup.FilesHashes.Add(fileHash.Key, fileHash.Value);
+                            }
+                            else   // Ещё не встречали файл на этом разделе
+                            {
+                                string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveInfo);
+                                bool isGroupExists = false;
                                 foreach (FileGroup fileGroup in fileGroups)
                                 {
-                                    if (fileGroup.DiskName == drive)
+                                    if (fileGroup.DiskSerialNumber == serialNumber)     // Группа файлов, у которой серийный номер диска совпадает с серийным номер диска, на котором определён раздел, существует
                                     {
                                         fileGroup.FilesHashes.Add(fileHash.Key, fileHash.Value);
+                                        volumeGroup.Add(volume, fileGroup);
+                                        isGroupExists = true;
+                                        break;
                                     }
                                 }
-                            }
-                            else
-                            {
-                                disks.Add(drive);
-                                if (fileGroups == null)
+                                if (!isGroupExists)     // Нет группы с тем же серийным номером, что и серийный номер диска, на котором находится раздел
                                 {
-                                    fileGroups = new FileGroup[1];
+                                    if (fileGroups == null)
+                                    {
+                                        fileGroups = new FileGroup[1];
+                                    }
+                                    else
+                                    {
+                                        Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
+                                    }
+                                    Dictionary<string, string> newDict = new Dictionary<string, string>();
+                                    newDict.Add(fileHash.Key, fileHash.Value);
+                                    fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
+                                    volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
                                 }
-                                else
-                                {
-                                    Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
-                                }
-                                Dictionary<string, string> newDict = new Dictionary<string, string>();
-                                newDict.Add(fileHash.Key, fileHash.Value);
-                                fileGroups[fileGroups.Length - 1] = new FileGroup(drive, newDict);
                             }
                         }
                         else
