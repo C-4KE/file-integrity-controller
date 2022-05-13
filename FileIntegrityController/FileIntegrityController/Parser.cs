@@ -76,31 +76,35 @@ namespace FileIntegrityController
                             else   // Ещё не встречали файл на этом разделе
                             {
                                 string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveInfo);
-                                bool isGroupExists = false;
-                                foreach (FileGroup fileGroup in fileGroups)
+                                if (fileGroups == null)
                                 {
-                                    if (fileGroup.DiskSerialNumber == serialNumber)     // Группа файлов, у которой серийный номер диска совпадает с серийным номер диска, на котором определён раздел, существует
-                                    {
-                                        fileGroup.FilesHashes.Add(fileHash.Key, fileHash.Value);
-                                        volumeGroup.Add(volume, fileGroup);
-                                        isGroupExists = true;
-                                        break;
-                                    }
-                                }
-                                if (!isGroupExists)     // Нет группы с тем же серийным номером, что и серийный номер диска, на котором находится раздел
-                                {
-                                    if (fileGroups == null)
-                                    {
-                                        fileGroups = new FileGroup[1];
-                                    }
-                                    else
-                                    {
-                                        Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
-                                    }
+                                    fileGroups = new FileGroup[1];
                                     Dictionary<string, string> newDict = new Dictionary<string, string>();
                                     newDict.Add(fileHash.Key, fileHash.Value);
                                     fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
                                     volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                }
+                                else
+                                {
+                                    bool isGroupExists = false;
+                                    foreach (FileGroup fileGroup in fileGroups)
+                                    {
+                                        if (fileGroup.DiskSerialNumber == serialNumber)     // Группа файлов, у которой серийный номер диска совпадает с серийным номер диска, на котором определён раздел, существует
+                                        {
+                                            fileGroup.FilesHashes.Add(fileHash.Key, fileHash.Value);
+                                            volumeGroup.Add(volume, fileGroup);
+                                            isGroupExists = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!isGroupExists)     // Нет группы с тем же серийным номером, что и серийный номер диска, на котором находится раздел
+                                    {
+                                        Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
+                                        Dictionary<string, string> newDict = new Dictionary<string, string>();
+                                        newDict.Add(fileHash.Key, fileHash.Value);
+                                        fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
+                                        volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                    }
                                 }
                             }
                         }
