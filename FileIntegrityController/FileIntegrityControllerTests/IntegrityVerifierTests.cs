@@ -35,10 +35,10 @@ namespace FileIntegrityControllerTests
             FileStream fileStream = new FileStream(testFilePath1, FileMode.Open);
 
             // Act
-            bool actual = IntegrityVerifier.VerifyFile(fileStream, hash);
+            KeyValuePair<string, bool> actual = IntegrityVerifier.VerifyFile(fileStream, hash);
 
             // Assert
-            Assert.IsTrue(actual);
+            Assert.IsTrue(actual.Value);
             fileStream.Close();
             File.Delete(testFilePath1);
         }
@@ -68,10 +68,10 @@ namespace FileIntegrityControllerTests
             FileStream fileStream = new FileStream(testFilePath1, FileMode.Open);
 
             // Act
-            bool actual = IntegrityVerifier.VerifyFile(fileStream, hash);
+            KeyValuePair<string, bool> actual = IntegrityVerifier.VerifyFile(fileStream, hash);
 
             // Assert
-            Assert.IsFalse(actual);
+            Assert.IsFalse(actual.Value);
             fileStream.Close();
             File.Delete(testFilePath1);
         }

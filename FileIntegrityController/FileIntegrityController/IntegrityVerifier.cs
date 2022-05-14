@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.IO;
+using System.Collections.Generic;
 
 namespace FileIntegrityController
 {
@@ -15,7 +16,7 @@ namespace FileIntegrityController
          * <param name="hash">Хэш файла для проверки целостности.</param>
          * <returns>Возвращает true, если файл не изменён (снова подсчитанный хэш равен данному в Json), иначе - возвращает false.</returns>
          */
-        public static bool VerifyFile(FileStream fileStream, string hash)
+        public static KeyValuePair<string, bool> VerifyFile(FileStream fileStream, string hash)
         {
             bool result = false;
             string actualHash;
@@ -32,7 +33,7 @@ namespace FileIntegrityController
             {
                 Console.WriteLine("Error while trying to compute hash: " + exc.Message);
             }
-            return result;
+            return new KeyValuePair<string, bool>(fileStream.Name, result);
         }
     }
 }
