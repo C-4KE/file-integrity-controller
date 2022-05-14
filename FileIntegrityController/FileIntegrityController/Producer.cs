@@ -23,6 +23,14 @@ namespace FileIntegrityController
             _producerBuffer.LinkTo(_consumerBuffer);
         }
 
+        public BufferBlock<Task<KeyValuePair<string, bool>>> ProducerBuffer
+        {
+            get
+            {
+                return _producerBuffer;
+            }
+        }
+
         /**
          * <summary>Метод, рассылающий задания на проверку целостности потребителю и возвращающий результат.</summary>
          * <returns>Словарь пар (путь_к_файлу : результат_проверку (true/false))</returns>
@@ -30,6 +38,7 @@ namespace FileIntegrityController
         public Dictionary<string, bool> Execute()
         {
             List<Task<KeyValuePair<string, bool>>> tasks = new List<Task<KeyValuePair<string, bool>>>();
+            List<FileStream> fileStreams = new List<FileStream>();
             
             // Открытие файловых потоков и отправка заданий потребителю
             foreach (KeyValuePair<string, string> fileHash in _fileGroup.FilesHashes)
@@ -40,6 +49,7 @@ namespace FileIntegrityController
                     Task<KeyValuePair<string, bool>> newTask = new Task<KeyValuePair<string, bool>>(() => IntegrityVerifier.VerifyFile(fileStream, fileHash.Value));
                     _producerBuffer.SendAsync(newTask);
                     tasks.Add(newTask);
+                    fileStreams.Add(fileStream);
                 }
                 catch (Exception exc)
                 {
@@ -52,6 +62,12 @@ namespace FileIntegrityController
 
             // Ожидание результатов
             Task.WaitAll(tasks.ToArray());
+
+            // Закрытие файловых потоков
+            foreach (FileStream stream in fileStreams)
+            {
+                stream.Close();
+            }
 
             // Формирование и возврат результата
             Dictionary<string, bool> results = new Dictionary<string, bool>();
