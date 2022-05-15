@@ -53,7 +53,7 @@ namespace FileIntegrityController
                 }
                 catch (Exception exc)
                 {
-                    Console.WriteLine($"Error while openning FileStream for {fileHash.Key}: {exc.Message}");
+                    Console.WriteLine($"Error while sending task to verify {fileHash.Key}: {exc.Message}");
                 }
             }
 
@@ -66,7 +66,14 @@ namespace FileIntegrityController
             // Закрытие файловых потоков
             foreach (FileStream stream in fileStreams)
             {
-                stream.Close();
+                try
+                {
+                    stream.Close();
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine($"Error while closing FileStream: {exc.Message}");
+                }
             }
 
             // Формирование и возврат результата
