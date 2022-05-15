@@ -9,6 +9,11 @@ namespace FileIntegrityController
         private BufferBlock<Task<KeyValuePair<string, bool>>> _consumerBuffer;
         private List<BufferBlock<Task<KeyValuePair<string, bool>>>> _producerBuffers;
 
+        /**
+         * <summary>Конструктор</summary>
+         * <param name="consumerBuffer">Буфер потребителя, откуда будут считываться задания.</param>
+         * <param name="producerBuffers">Буферы производителей, которые соединены с буфером потребителя.</param>
+         */
         public Consumer(BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer, List<BufferBlock<Task<KeyValuePair<string, bool>>>> producerBuffers)
         {
             _consumerBuffer = consumerBuffer;

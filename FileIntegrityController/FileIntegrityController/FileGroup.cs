@@ -12,9 +12,14 @@ namespace FileIntegrityController
         private string _diskSerialNumber;
         private Dictionary<string, string> _filesHashes;
 
-        public FileGroup(string diskName, Dictionary<string, string> filesHashes)
+        /**
+         * <summary>Конструктор</summary>
+         * <param name="diskSerialNumber">Серийный номер диска, на котором лежат файлы группы.</param>
+         * <param name="filesHashes">Словарь пар (путь_к_файлу : хэш).</param>
+         */
+        public FileGroup(string diskSerialNumber, Dictionary<string, string> filesHashes)
         {
-            _diskSerialNumber = diskName;
+            _diskSerialNumber = diskSerialNumber;
             _filesHashes = new Dictionary<string, string>(filesHashes);
         }
 

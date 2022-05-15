@@ -15,6 +15,11 @@ namespace FileIntegrityController
         private BufferBlock<Task<KeyValuePair<string, bool>>> _producerBuffer;
         private BufferBlock<Task<KeyValuePair<string, bool>>> _consumerBuffer;
 
+        /**
+         * <summary>Конструктор</summary>
+         * <param name="consumerBuffer">Буфер потребителя, к которому будет подключен буфер производителя для передачи заданий.</param>
+         * <param name="fileGroup">Группа файлов, лежащая на одном диске.</param>
+         */
         public Producer(FileGroup fileGroup, BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer)
         {
             _fileGroup = fileGroup;
