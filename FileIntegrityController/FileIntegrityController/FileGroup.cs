@@ -9,23 +9,28 @@ namespace FileIntegrityController
      */
     public class FileGroup
     {
-        private string _diskName;
+        private string _diskSerialNumber;
         private Dictionary<string, string> _filesHashes;
 
-        public FileGroup(string diskName, Dictionary<string, string> filesHashes)
+        /**
+         * <summary>Конструктор</summary>
+         * <param name="diskSerialNumber">Серийный номер диска, на котором лежат файлы группы.</param>
+         * <param name="filesHashes">Словарь пар (путь_к_файлу : хэш).</param>
+         */
+        public FileGroup(string diskSerialNumber, Dictionary<string, string> filesHashes)
         {
-            _diskName = diskName;
+            _diskSerialNumber = diskSerialNumber;
             _filesHashes = new Dictionary<string, string>(filesHashes);
         }
 
         /**
-         * <value>Имя диска, на котором находятся файлы, чьи пути и хэши хранятся в этом объекте.</value>
+         * <value>Серийный номер диска, на котором находятся файлы, чьи пути и хэши хранятся в этом объекте.</value>
          */
-        public string DiskName
+        public string DiskSerialNumber
         {
             get
             {
-                return _diskName;
+                return _diskSerialNumber;
             }
         }
 
@@ -42,7 +47,7 @@ namespace FileIntegrityController
 
         public override bool Equals(object obj)
         {
-            bool answer = (_diskName == ((FileGroup)obj)._diskName) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
+            bool answer = (_diskSerialNumber == ((FileGroup)obj)._diskSerialNumber) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
             Console.WriteLine(answer);
             return answer;
         }
@@ -50,49 +55,13 @@ namespace FileIntegrityController
         public override int GetHashCode()
         {
             int hash = 0;
-            hash += _diskName.GetHashCode();
+            hash += _diskSerialNumber.GetHashCode();
             foreach (KeyValuePair<string, string> fileHash in _filesHashes)
             {
                 hash += fileHash.Key.GetHashCode();
                 hash += fileHash.Value.GetHashCode();
             }
             return hash;
-        }
-
-        /**
-         * <summary>Метод, разделяющий группу на части.</summary>
-         * <param name="parts">Количество частей, на которые необходимо разбить группу.</param>
-         * <returns>Возвращает список из объектов FileGroup, являющиеся частями вызывающего метод объекта.</returns>
-         */
-        public List<FileGroup> Split(uint parts)
-        {
-            List<FileGroup> fileGroups = new List<FileGroup>();
-            if (parts > 1)
-            {
-                long elementsPerPart = _filesHashes.Count % parts == 0 ? _filesHashes.Count / parts : _filesHashes.Count / parts + 1;
-                FileGroup tempGroup = new FileGroup(_diskName, new Dictionary<string, string>());
-                long counter = 0;
-                foreach (KeyValuePair<string, string> fileHash in _filesHashes)
-                {
-                    tempGroup._filesHashes.Add(fileHash.Key, fileHash.Value);
-                    counter++;
-                    if (counter == elementsPerPart)
-                    {
-                        fileGroups.Add(tempGroup);
-                        tempGroup = new FileGroup(_diskName, new Dictionary<string, string>());
-                        counter = 0;
-                    }
-                }
-                if (counter != 0)
-                {
-                    fileGroups.Add(tempGroup);
-                }
-            }
-            else
-            {
-                fileGroups.Add(this);
-            }
-            return fileGroups;
         }
     }
 }

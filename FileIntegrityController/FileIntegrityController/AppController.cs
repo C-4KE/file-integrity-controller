@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Configuration;
 using System.IO;
+using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks;
 
 namespace FileIntegrityController
 {
@@ -14,7 +15,7 @@ namespace FileIntegrityController
         /**
          * <summary>Метод, управляющий ходом работы программы.</summary>
          */
-        async public static void ManageApp()
+        public static void ManageApp()
         {
             Console.WriteLine("Program has started.");
             // Получение адреса JSON файла из config файла.
@@ -30,62 +31,47 @@ namespace FileIntegrityController
                     Console.WriteLine("Sorting files by disks...");
                     FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
 
-                    // Подготовка к запуску проверки
-                    StorageInfo storageInfo = new StorageInfo();
-                    List<string>[] invalidFiles = new List<string>[fileGroups.Length];
-                    Task<List<string>>[] tasks = new Task<List<string>>[fileGroups.Length];
+                    // Создание блока Dataflow, который будет читать потребитель, и к которому будут подключены блоки производителей
+                    BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
 
-                    Console.WriteLine("Starting integrity verifying...");
-                    // Запуск проверки
-                    for (int i = 0; i < fileGroups.Length; i++)
+                    // Создание производителей
+                    Producer[] producers = new Producer[fileGroups.Length];
+                    for (int i = 0; i < producers.Length; i++)
                     {
-                        tasks[i] = Distributor.DistributeAsync(fileGroups[i], storageInfo);
-                    }
-                    for (int i = 0; i < fileGroups.Length; i++)
-                    {
-                        invalidFiles[i] = await tasks[i];
+                        producers[i] = new Producer(fileGroups[i], consumerBuffer);
                     }
 
-                    // Вывод результата проверки на экран
-                    PrintResult(fileGroups, invalidFiles);
-                }
-                else
-                {
-                    Console.WriteLine("There are no files to check.");
+                    // Создание потребителя
+                    List<BufferBlock<Task<KeyValuePair<string, bool>>>> producerBuffers = new List<BufferBlock<Task<KeyValuePair<string, bool>>>>();
+                    for (int i = 0; i < producers.Length; i++)
+                    {
+                        producerBuffers.Add(producers[i].ProducerBuffer);
+                    }
+                    Consumer consumer = new Consumer(consumerBuffer, producerBuffers);
+
+                    // Запуск потребителя
+                    Task<Dictionary<string, bool>>[] producerTasks = new Task<Dictionary<string, bool>>[producers.Length];
+                    Task consumerTask = Task.Run(() => consumer.Execute());
+
+                    // Запуск производителей
+                    for (int i = 0; i < producerTasks.Length; i++)
+                    {
+                        var localProducer = producers[i];
+                        producerTasks[i] = Task<Dictionary<string, bool>>.Run(() => localProducer.Execute());
+                    }
+
+                    // Ожидание результата
+                    consumerTask.Wait();
+                    Task.WaitAll(producerTasks);
+
+                    // Вывод результата
+                    Dictionary<string, bool> result = GetResultFromTasks(producerTasks);
+                    PrintResult(result);
                 }
             }
-        }
-
-        /**
-         * <summary>Метод, выводящий результат проверки на целостность.</summary>
-         * <param name="fileGroups">Массив проверявшихся групп файлов.</param>
-         * <param name="invalidFiles">Массив списков изменённых файлов, в котором каждый список по индексу соответствует индексу в fileGroups.</param>
-         */
-        public static void PrintResult(FileGroup[] fileGroups, List<string>[] invalidFiles)
-        {
-            if (fileGroups.Length == invalidFiles.Length)
+            else
             {
-                Console.WriteLine("");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Results: ");
-                Console.ResetColor();
-                Console.WriteLine("");
-                for (int i = 0; i < fileGroups.Length; i++)
-                {
-                    Console.WriteLine($"Disk: {fileGroups[i].DiskName}");
-                    Console.WriteLine($"{fileGroups[i].FilesHashes.Count - invalidFiles[i].Count} of {fileGroups[i].FilesHashes.Count} files valid.");
-                    if (invalidFiles[i].Count != 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Invalid files: ");
-                        Console.ResetColor();
-                        foreach (string file in invalidFiles[i])
-                        {
-                            Console.WriteLine(file);
-                        }
-                    }
-                    Console.WriteLine("");
-                }
+                Console.WriteLine("There are no files to check.");
             }
         }
 
@@ -93,7 +79,7 @@ namespace FileIntegrityController
          * <summary>Метод, считывающий путь к JSON файлу из config файла.</summary>
          * <returns>Путь к JSON файлу, если чтение произошло успешно и JSON файл существует. Иначе - возвращает null.</returns>
          */
-        public static string ReadConfig()
+        private static string ReadConfig()
         {
             string jsonPath = ConfigurationManager.AppSettings.Get("JSONPath");
             if (jsonPath == null)
@@ -109,6 +95,64 @@ namespace FileIntegrityController
                 }
             }
             return jsonPath;
+        }
+
+        /**
+         * <summary>Метод, достающий результаты проверки (пары (путь_к_файлу : хэш)) из заданий.</summary>
+         * <param name="tasks">Массив заданий, запускавших производителей.</param>
+         * <returns>Словарь пар (путь_к_файлу : хэш) всех проверенных файлов.</returns>
+         */
+        private static Dictionary<string, bool> GetResultFromTasks(Task[] tasks)
+        {
+            Dictionary<string, bool> result = new Dictionary<string, bool>();
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                foreach (KeyValuePair<string, bool> pair in ((Task<Dictionary<string, bool>>)tasks[i]).Result)
+                {
+                    result.Add(pair.Key, pair.Value);
+                }
+            }
+            return result;
+        }
+
+        /**
+         * <summary>Метод, выводящий результат работы программы.</summary>
+         * <param name="checkResult">Словарь всех проверенных файлов.</param>
+         */
+        private static void PrintResult(Dictionary<string, bool> checkResult)
+        {
+            if (checkResult.Count != 0)
+            {
+                int correctCount = 0;
+                foreach (KeyValuePair<string, bool> pair in checkResult)
+                {
+                    if (pair.Value)
+                        correctCount++;
+                }
+                Console.WriteLine("");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Results: ");
+                Console.ResetColor();
+                Console.WriteLine($"{checkResult.Count} files were checked.");
+                Console.WriteLine($"{correctCount} out of {checkResult.Count} files are not changed.");
+                if (correctCount != checkResult.Count)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Invalid files: ");
+                    Console.ResetColor();
+                    foreach (KeyValuePair<string, bool> pair in checkResult)
+                    {
+                        if (!pair.Value)
+                        {
+                            Console.WriteLine(pair.Key);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No one file wasn\'t checked.");
+            }
         }
     }
 }

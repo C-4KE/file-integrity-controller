@@ -1,10 +1,8 @@
-﻿using System.Threading.Tasks;
-
-namespace FileIntegrityController
+﻿namespace FileIntegrityController
 {
     class Program
     {
-        async static Task Main(string[] args)
+        static void Main(string[] args)
         {
             AppController.ManageApp();
         }

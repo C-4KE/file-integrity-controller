@@ -137,7 +137,7 @@ namespace FileIntegrityControllerTests
             input.Add(testFilePath1, "Test1");
             input.Add(testFilePath2, "Test2");
             FileGroup[] expected = new FileGroup[1];
-            expected[0] = new FileGroup(Parser.GetDriveInfo(testFilePath1).Name, input);
+            expected[0] = new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveInfo(testFilePath1)), input);
 
             // Act
             FileGroup[] actual = Parser.SortFilesByDisks(input);
@@ -160,7 +160,7 @@ namespace FileIntegrityControllerTests
             input.Add(testFilePath1, "Test1");
             input.Add(testFilePath2, "Test2");
             FileGroup[] expected = new FileGroup[1];
-            expected[0] = new FileGroup(Parser.GetDriveInfo(testFilePath1).Name, new Dictionary<string, string>() { { testFilePath1, "Test1" } });
+            expected[0] = new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveInfo(testFilePath1)), new Dictionary<string, string>() { { testFilePath1, "Test1" } });
 
             // Act
             FileGroup[] actual = Parser.SortFilesByDisks(input);
