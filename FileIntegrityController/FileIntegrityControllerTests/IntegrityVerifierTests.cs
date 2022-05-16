@@ -14,7 +14,7 @@ namespace FileIntegrityControllerTests
     public class IntegrityVerifierTests
     {
         [TestMethod]
-        public void VerifyFile_ExistingFileWithCorrectHash_ReturnIsTrue()
+        public void VerifyHash_ExistingFileWithCorrectHash_ReturnIsTrue()
         {
             // Arrange
             string testFilePath1 = "./Test1.txt";
@@ -31,19 +31,30 @@ namespace FileIntegrityControllerTests
                     hash = BitConverter.ToString(hashBytes);
                 }
             }
-            FileStream fileStream = new FileStream(testFilePath1, FileMode.Open);
 
             // Act
-            KeyValuePair<string, bool> actual = IntegrityVerifier.VerifyFile(fileStream, hash);
+            bool actual;
+            using (FileStream fileStream = new FileStream(testFilePath1, FileMode.Open))
+            {
+                using (MD5 md5 = MD5.Create())
+                {
+                    byte[] buffer = new byte[4096];
+                    int readAmount = 0;
+                    while ((readAmount = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        md5.TransformBlock(buffer, 0, readAmount, buffer, 0);
+                    }
+                    actual = IntegrityVerifier.VerifyHash(md5, hash);
+                }
+            }
 
             // Assert
-            Assert.IsTrue(actual.Value);
-            fileStream.Close();
+            Assert.IsTrue(actual);
             File.Delete(testFilePath1);
         }
 
         [TestMethod]
-        public void VerifyFile_ExistingFileWithIncorrectHash_ReturnIsFalse()
+        public void VerifyHash_ExistingFileWithIncorrectHash_ReturnIsFalse()
         {
             // Arrange
             string testFilePath1 = "./Test1.txt";
@@ -64,14 +75,25 @@ namespace FileIntegrityControllerTests
             {
                 fstream.Write(Encoding.UTF8.GetBytes("123"));
             }
-            FileStream fileStream = new FileStream(testFilePath1, FileMode.Open);
 
             // Act
-            KeyValuePair<string, bool> actual = IntegrityVerifier.VerifyFile(fileStream, hash);
+            bool actual;
+            using (FileStream fileStream = new FileStream(testFilePath1, FileMode.Open))
+            {
+                using (MD5 md5 = MD5.Create())
+                {
+                    byte[] buffer = new byte[4096];
+                    int readAmount = 0;
+                    while ((readAmount = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        md5.TransformBlock(buffer, 0, readAmount, buffer, 0);
+                    }
+                    actual = IntegrityVerifier.VerifyHash(md5, hash);
+                }
+            }
 
             // Assert
-            Assert.IsFalse(actual.Value);
-            fileStream.Close();
+            Assert.IsFalse(actual);
             File.Delete(testFilePath1);
         }
     }
