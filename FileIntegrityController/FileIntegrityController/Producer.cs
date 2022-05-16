@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using System.Security.Cryptography;
 
 namespace FileIntegrityController
 {
@@ -12,23 +13,23 @@ namespace FileIntegrityController
     public class Producer
     {
         private FileGroup _fileGroup;
-        private BufferBlock<Task<KeyValuePair<string, bool>>> _producerBuffer;
-        private BufferBlock<Task<KeyValuePair<string, bool>>> _consumerBuffer;
+        private BufferBlock<Task> _producerBuffer;
+        private BufferBlock<Task> _consumerBuffer;
 
         /**
          * <summary>Конструктор</summary>
          * <param name="consumerBuffer">Буфер потребителя, к которому будет подключен буфер производителя для передачи заданий.</param>
          * <param name="fileGroup">Группа файлов, лежащая на одном диске.</param>
          */
-        public Producer(FileGroup fileGroup, BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer)
+        public Producer(FileGroup fileGroup, BufferBlock<Task> consumerBuffer)
         {
             _fileGroup = fileGroup;
             _consumerBuffer = consumerBuffer;
-            _producerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+            _producerBuffer = new BufferBlock<Task>();
             _producerBuffer.LinkTo(_consumerBuffer);
         }
 
-        public BufferBlock<Task<KeyValuePair<string, bool>>> ProducerBuffer
+        public BufferBlock<Task> ProducerBuffer
         {
             get
             {
@@ -42,19 +43,38 @@ namespace FileIntegrityController
          */
         public Dictionary<string, bool> Execute()
         {
-            List<Task<KeyValuePair<string, bool>>> tasks = new List<Task<KeyValuePair<string, bool>>>();
-            List<FileStream> fileStreams = new List<FileStream>();
-            
-            // Открытие файловых потоков и отправка заданий потребителю
+            Dictionary<string, bool> results = new Dictionary<string, bool>();
             foreach (KeyValuePair<string, string> fileHash in _fileGroup.FilesHashes)
             {
+                Console.WriteLine($"Checking {fileHash.Key}");
                 try
                 {
-                    FileStream fileStream = new FileStream(fileHash.Key, FileMode.Open);
-                    Task<KeyValuePair<string, bool>> newTask = new Task<KeyValuePair<string, bool>>(() => IntegrityVerifier.VerifyFile(fileStream, fileHash.Value));
-                    _producerBuffer.SendAsync(newTask);
-                    tasks.Add(newTask);
-                    fileStreams.Add(fileStream);
+                    using (FileStream fileStream = new FileStream(fileHash.Key, FileMode.Open))
+                    {
+                        using (MD5 md5 = MD5.Create())
+                        {
+                            Task task = null;
+                            byte[] buffer = new byte[4096];
+                            int readAmount = 0;
+
+                            // Чтение файла по кускам и отправка заданий на подсчёт хэша
+                            while ((readAmount = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                task = new Task(() => IntegrityVerifier.CheckPart(md5, buffer, readAmount));
+                                _producerBuffer.SendAsync(task);
+                                if (task != null) task.Wait();
+                            }
+                            task.Wait();
+
+                            // Отправка задания на непосредственно проверку
+                            task = new Task<bool>(() => IntegrityVerifier.VerifyHash(md5, fileHash.Value));
+                            _producerBuffer.SendAsync(task);
+                            task.Wait();
+
+                            // Добавление записи в результативный словарь
+                            results.Add(fileHash.Key, ((Task<bool>)task).Result);
+                        }
+                    }
                 }
                 catch (Exception exc)
                 {
@@ -65,29 +85,6 @@ namespace FileIntegrityController
             // Завершение работы с буфером отправки
             _producerBuffer.Complete();
 
-            // Ожидание результатов
-            Task.WaitAll(tasks.ToArray());
-
-            // Закрытие файловых потоков
-            foreach (FileStream stream in fileStreams)
-            {
-                try
-                {
-                    stream.Close();
-                }
-                catch (Exception exc)
-                {
-                    Console.WriteLine($"Error while closing FileStream: {exc.Message}");
-                }
-            }
-
-            // Формирование и возврат результата
-            Dictionary<string, bool> results = new Dictionary<string, bool>();
-            foreach (Task<KeyValuePair<string, bool>> task in tasks)
-            {
-                KeyValuePair<string, bool> result = task.Result;
-                results.Add(result.Key, result.Value);
-            }
             return results;
         }
     }
