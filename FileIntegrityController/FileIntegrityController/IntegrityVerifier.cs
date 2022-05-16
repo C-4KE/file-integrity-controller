@@ -11,29 +11,36 @@ namespace FileIntegrityController
     public class IntegrityVerifier
     {
         /**
-         * <summary>Метод, который проверяет целостность одного файла.</summary>
-         * <param name="fileStream">Открытый поток файла.</param>
-         * <param name="hash">Хэш файла для проверки целостности.</param>
-         * <returns>Возвращает true, если файл не изменён (снова подсчитанный хэш равен данному в Json), иначе - возвращает false.</returns>
+         * <summary>Метод, проверяющий кусок файла.</summary>
+         * <param name="md5">Объект, выполняющий вычисление хэша и накапливающий его.</param>
+         * <param name="part">Байтовый кусок файла.</param>
+         * <param name="readAmount">Количество байтов в буфере, считанных на шаге.</param>
          */
-        public static KeyValuePair<string, bool> VerifyFile(FileStream fileStream, string hash)
+        public static void CheckPart(MD5 md5, byte[] part, int readAmount)
         {
-            bool result = false;
-            string actualHash;
-            try
-            {
-                using (MD5 md5 = MD5.Create())
-                {
-                    byte[] byteHash = md5.ComputeHash(fileStream);
-                    actualHash = BitConverter.ToString(byteHash);
-                }
-                result = (actualHash == hash);
-            }
-            catch (Exception exc)
-            {
-                Console.WriteLine("Error while trying to compute hash: " + exc.Message);
-            }
-            return new KeyValuePair<string, bool>(fileStream.Name, result);
+            md5.TransformBlock(part, 0, readAmount, part, 0);
+        }
+
+        /**
+         * <summary>Метод, производящий завершение формирования хэша и возвращающий его.</summary>
+         * <param name="md5">Объект md5, хранящий в себе незавершенный (не применён метод TransformFinalBlock) хэш всех кусков файла.</param>
+         * <returns>Строка хэша.</returns>
+         */
+        public static string GetFullHash(MD5 md5)
+        {
+            md5.TransformFinalBlock(new byte[] { }, 0, 0);
+            return BitConverter.ToString(md5.Hash);
+        }
+
+        /**
+         * <summary>Метод, который проверяет целостность одного файла.</summary>
+         * <param name="md5">Объект md5, хранящий в себе незавершенный (не применён метод TransformFinalBlock) хэш всех кусков файла.</param>
+         * <param name="hash">Хэш для сравнения.</param>
+         * <returns>Возвращает true, если файл не изменялся, иначе - возващает false.</returns>
+         */
+        public static bool VerifyHash(MD5 md5, string hash)
+        {
+            return GetFullHash(md5) == hash;
         }
     }
 }
