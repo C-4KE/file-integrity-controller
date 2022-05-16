@@ -6,15 +6,15 @@ namespace FileIntegrityController
 {
     public class Consumer
     {
-        private BufferBlock<Task<KeyValuePair<string, bool>>> _consumerBuffer;
-        private List<BufferBlock<Task<KeyValuePair<string, bool>>>> _producerBuffers;
+        private BufferBlock<Task> _consumerBuffer;
+        private List<BufferBlock<Task>> _producerBuffers;
 
         /**
          * <summary>Конструктор</summary>
          * <param name="consumerBuffer">Буфер потребителя, откуда будут считываться задания.</param>
          * <param name="producerBuffers">Буферы производителей, которые соединены с буфером потребителя.</param>
          */
-        public Consumer(BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer, List<BufferBlock<Task<KeyValuePair<string, bool>>>> producerBuffers)
+        public Consumer(BufferBlock<Task> consumerBuffer, List<BufferBlock<Task>> producerBuffers)
         {
             _consumerBuffer = consumerBuffer;
             _producerBuffers = producerBuffers;
@@ -35,7 +35,7 @@ namespace FileIntegrityController
         {
             while (await _consumerBuffer.OutputAvailableAsync())
             {
-                while (_consumerBuffer.TryReceive(out Task<KeyValuePair<string, bool>> task))
+                while (_consumerBuffer.TryReceive(out Task task))
                 {
                     task.Start();
                 }
