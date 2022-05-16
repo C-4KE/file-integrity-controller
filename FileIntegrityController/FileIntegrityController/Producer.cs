@@ -46,7 +46,6 @@ namespace FileIntegrityController
             Dictionary<string, bool> results = new Dictionary<string, bool>();
             foreach (KeyValuePair<string, string> fileHash in _fileGroup.FilesHashes)
             {
-                Console.WriteLine($"Checking {fileHash.Key}");
                 try
                 {
                     using (FileStream fileStream = new FileStream(fileHash.Key, FileMode.Open))
