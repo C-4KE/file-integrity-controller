@@ -32,7 +32,7 @@ namespace FileIntegrityController
                     FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
 
                     // Создание блока Dataflow, который будет читать потребитель, и к которому будут подключены блоки производителей
-                    BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+                    BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
 
                     // Создание производителей
                     Producer[] producers = new Producer[fileGroups.Length];
@@ -42,7 +42,7 @@ namespace FileIntegrityController
                     }
 
                     // Создание потребителя
-                    List<BufferBlock<Task<KeyValuePair<string, bool>>>> producerBuffers = new List<BufferBlock<Task<KeyValuePair<string, bool>>>>();
+                    List<BufferBlock<Task>> producerBuffers = new List<BufferBlock<Task>>();
                     for (int i = 0; i < producers.Length; i++)
                     {
                         producerBuffers.Add(producers[i].ProducerBuffer);
