@@ -49,9 +49,9 @@ namespace FileIntegrityControllerTests
             }
             FileGroup fileGroup = new FileGroup("DISK1", filesHashes);
             Dictionary<string, bool> expected = new Dictionary<string, bool>() { { filesHashes.Keys.ToArray()[0], true }, { filesHashes.Keys.ToArray()[1], true } };
-            BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
             Producer producer = new Producer(fileGroup, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task<KeyValuePair<string, bool>>>>() { producer.ProducerBuffer });
+            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producer.ProducerBuffer });
 
             // Act
             Task consumerTask = Task.Run(() => consumer.Execute());
@@ -103,9 +103,9 @@ namespace FileIntegrityControllerTests
             }
             FileGroup fileGroup = new FileGroup("DISK1", filesHashes);
             Dictionary<string, bool> expected = new Dictionary<string, bool>() { { filesHashes.Keys.ToArray()[0], true }, { filesHashes.Keys.ToArray()[1], false } };
-            BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
             Producer producer = new Producer(fileGroup, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task<KeyValuePair<string, bool>>>>() { producer.ProducerBuffer });
+            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producer.ProducerBuffer });
 
             // Act
             Task consumerTask = Task.Run(() => consumer.Execute());
@@ -169,10 +169,10 @@ namespace FileIntegrityControllerTests
             FileGroup fileGroupDisk2 = new FileGroup("DISK2", filesHashesDisk2);
             Dictionary<string, bool> expectedDisk1 = new Dictionary<string, bool>() { { filesHashesDisk1.Keys.ToArray()[0], true } };
             Dictionary<string, bool> expectedDisk2 = new Dictionary<string, bool>() { { filesHashesDisk2.Keys.ToArray()[0], true }, { filesHashesDisk2.Keys.ToArray()[1], true } };
-            BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
             Producer producerDisk1 = new Producer(fileGroupDisk1, consumerBuffer);
             Producer producerDisk2 = new Producer(fileGroupDisk2, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task<KeyValuePair<string, bool>>>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
+            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
 
             // Act
             Task consumerTask = Task.Run(() => consumer.Execute());
@@ -249,10 +249,10 @@ namespace FileIntegrityControllerTests
             FileGroup fileGroupDisk2 = new FileGroup("DISK2", filesHashesDisk2);
             Dictionary<string, bool> expectedDisk1 = new Dictionary<string, bool>() { { filesHashesDisk1.Keys.ToArray()[0], false } };
             Dictionary<string, bool> expectedDisk2 = new Dictionary<string, bool>() { { filesHashesDisk2.Keys.ToArray()[0], true }, { filesHashesDisk2.Keys.ToArray()[1], false } };
-            BufferBlock<Task<KeyValuePair<string, bool>>> consumerBuffer = new BufferBlock<Task<KeyValuePair<string, bool>>>();
+            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
             Producer producerDisk1 = new Producer(fileGroupDisk1, consumerBuffer);
             Producer producerDisk2 = new Producer(fileGroupDisk2, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task<KeyValuePair<string, bool>>>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
+            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
 
             // Act
             Task consumerTask = Task.Run(() => consumer.Execute());
