@@ -83,6 +83,7 @@ namespace FileIntegrityController
                             Task task = new Task<bool>(() => IntegrityVerifier.VerifyHash(checkList[i].MD5Object, checkList[i].FileHash.Value));
                             checkList[i].SetNextTask(task);
                             finishedChecks.Add(checkList[i]);
+                            checkList[i].EndIO();               // Закрытие файлового потока
                             _filesAmount--;
                             _producerBuffer.SendAsync((checkList[i].NextTask, checkList[i].PreviousTask));
 
@@ -129,6 +130,7 @@ namespace FileIntegrityController
                 foreach (IntegrityCheckInfo checkInfo in finishedChecks)
                 {
                     results.Add(checkInfo.FileHash.Key, ((Task<bool>)checkInfo.NextTask).Result);
+                    checkInfo.EndMD5();
                 }
             }
             return results;
@@ -157,7 +159,8 @@ namespace FileIntegrityController
                 {
                     Console.WriteLine($"Error while trying to read {newCheckInfo.FileHash.Key} file: {newCheckInfo.InitializationException.Message}");
                     _filesAmount--;
-                    newCheckInfo.End();
+                    newCheckInfo.EndIO();
+                    newCheckInfo.EndMD5();
                 }
             }
             if (isRead)

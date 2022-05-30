@@ -116,12 +116,19 @@ namespace FileIntegrityController
         }
 
         /**
-         * <summary>Метод, закрывающий файловый поток и освобождающий объект MD5.</summary>
+         * <summary>Метод, закрывающий файловый поток.</summary>
          */
-        public void End()
+        public void EndIO()
         {
             if (_fileStream != null)
                 _fileStream.Close();
+        }
+
+        /**
+         * <summary>Метод, закрывающий объект MD5.</summary>
+         */
+        public void EndMD5()
+        {
             if (_md5 != null)
                 _md5.Dispose();
         }
