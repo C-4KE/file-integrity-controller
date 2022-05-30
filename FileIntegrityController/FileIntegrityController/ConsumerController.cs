@@ -21,9 +21,10 @@ namespace FileIntegrityController
             // Создание ActionBlock, запускающего задания по числу логических процессоров
             _consumers = new ActionBlock<(Task, Task)>(((Task, Task) tasks) =>
             {
-                tasks.Item2.Wait();
+                if (tasks.Item2 != null)
+                    tasks.Item2.Wait();
                 tasks.Item1.RunSynchronously();
-            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount, BoundedCapacity = Environment.ProcessorCount});
+            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount, BoundedCapacity = Environment.ProcessorCount });
 
             // Подключение producr'ов к Consumer'ам. Условие завершения ActionBlock - все Producer'ы завершили чтение.
             Task[] completionTasks = new Task[producerBuffers.Count];
@@ -43,7 +44,8 @@ namespace FileIntegrityController
             // Создание ActionBlock, запускающего задания по числу, заданному в качестве параметра конструктора
             _consumers = new ActionBlock<(Task, Task)>(((Task, Task) tasks) =>
             {
-                tasks.Item2.Wait();
+                if (tasks.Item2 != null)
+                    tasks.Item2.Wait();
                 tasks.Item1.RunSynchronously();
             }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = threadsNumber, BoundedCapacity = threadsNumber });
 
