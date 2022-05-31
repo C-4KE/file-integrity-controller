@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using System.Security.Cryptography;
+using System.Linq;
 
 namespace FileIntegrityController
 {
@@ -12,24 +11,31 @@ namespace FileIntegrityController
      */
     public class Producer
     {
-        private FileGroup _fileGroup;
-        private BufferBlock<Task> _producerBuffer;
-        private BufferBlock<Task> _consumerBuffer;
-
+        private FileGroup _fileGroup;                           // Группа файлов
+        private BufferBlock<(Task, Task)> _producerBuffer;      // Буффер, куда загружаются задания (следующее задание, предыдущее задание)
+        private int _queueSize;                                 // Размер очереди буффера
+        private int _filesAmount;                               // Количество проверяемых файлов
+        private int _filesCounter;                              // Счётчик, указывающий на позицию в массиве ключей для словаря с файлами и хэшами
+        private int _checkForNewIOCooldown = 6;                 // Количество итераций, через которое проверяется, не надо ли открыть новый IO-поток
+        private int _bufferSize = 4096;                         // Размер порции файла
+            
         /**
          * <summary>Конструктор</summary>
          * <param name="consumerBuffer">Буфер потребителя, к которому будет подключен буфер производителя для передачи заданий.</param>
          * <param name="fileGroup">Группа файлов, лежащая на одном диске.</param>
+         * <param name="queueSize">Размер очереди для проверяемых порций файлов в Producer'е.</param>
          */
-        public Producer(FileGroup fileGroup, BufferBlock<Task> consumerBuffer)
+        public Producer(FileGroup fileGroup, int queueSize)
         {
+            queueSize = queueSize > 0 ? queueSize : Environment.ProcessorCount;
+            _queueSize = queueSize;
             _fileGroup = fileGroup;
-            _consumerBuffer = consumerBuffer;
-            _producerBuffer = new BufferBlock<Task>();
-            _producerBuffer.LinkTo(_consumerBuffer);
+            _producerBuffer = new BufferBlock<(Task, Task)>(new DataflowBlockOptions() { BoundedCapacity = queueSize });
+            _filesAmount = _fileGroup.FilesHashes.Count;
+            _filesCounter = 0;
         }
 
-        public BufferBlock<Task> ProducerBuffer
+        public BufferBlock<(Task, Task)> ProducerBuffer
         {
             get
             {
@@ -44,47 +50,143 @@ namespace FileIntegrityController
         public Dictionary<string, bool> Execute()
         {
             Dictionary<string, bool> results = new Dictionary<string, bool>();
-            foreach (KeyValuePair<string, string> fileHash in _fileGroup.FilesHashes)
+            string[] keys = _fileGroup.FilesHashes.Keys.ToArray();
+
+            // Получение первого объекта, хранящего данные о проверяемом файле
+            IntegrityCheckInfo firstCheckInfo = GetNewCheckInfo(keys);
+            if (firstCheckInfo != null)
             {
-                try
+                List<IntegrityCheckInfo> checkList = new List<IntegrityCheckInfo>();
+                checkList.Add(firstCheckInfo);
+                List<Task> finalizingTasks = new List<Task>();
+                List<IntegrityCheckInfo> finishedChecks = new List<IntegrityCheckInfo>();
+                int busyIterations = 0; // Счётчик итераций в очередном цикле проверки на открытие нового IO-потока, на которых очередь была заполнена
+                int checkIO = 0;
+
+                // Цикл отправки кусков файлов Consumer'ам
+                while (_filesAmount > 0)
                 {
-                    using (FileStream fileStream = new FileStream(fileHash.Key, FileMode.Open))
+                    List<int> toRemove = new List<int>();
+                    // Отправка кусков файлов уже открытых IO-потоков
+                    for (int i = 0; i < checkList.Count; i++)
                     {
-                        using (MD5 md5 = MD5.Create())
+                        IntegrityCheckInfo currentCheck = checkList[i];
+                        byte[] buffer = new byte[_bufferSize];
+                        int readAmount = 0;
+                        if ((readAmount = currentCheck.Stream.Read(buffer, 0, buffer.Length)) > 0)
                         {
-                            Task task = null;
-                            byte[] buffer = new byte[4096];
-                            int readAmount = 0;
+                            Task task = new Task(() => IntegrityVerifier.CheckPart(currentCheck.MD5Object, buffer, readAmount));
+                            currentCheck.SetNextTask(task);
+                            _producerBuffer.SendAsync((currentCheck.NextTask, currentCheck.PreviousTask));
+                        }
+                        else
+                        {
+                            // Отсылка завершающего задания
+                            Task task = new Task<bool>(() => IntegrityVerifier.VerifyHash(currentCheck.MD5Object, currentCheck.FileHash.Value));
+                            currentCheck.SetNextTask(task);
+                            finalizingTasks.Add(task);
+                            finishedChecks.Add(currentCheck);
+                            currentCheck.EndIO();               // Закрытие файлового потока
+                            _filesAmount--;
+                            _producerBuffer.SendAsync((currentCheck.NextTask, currentCheck.PreviousTask));
 
-                            // Чтение файла по кускам и отправка заданий на подсчёт хэша
-                            while ((readAmount = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                            // Получение нового объекта, хранящего данные о проверяемом файле
+                            if (_filesCounter < _fileGroup.FilesHashes.Count)
                             {
-                                task = new Task(() => IntegrityVerifier.CheckPart(md5, buffer, readAmount));
-                                _producerBuffer.SendAsync(task);
-                                if (task != null) task.Wait();
+                                IntegrityCheckInfo newCheckInfo = GetNewCheckInfo(keys);
+                                if (newCheckInfo != null)
+                                {
+                                    checkList[i] = newCheckInfo;
+                                }
+                                else
+                                {
+                                    toRemove.Add(i);
+                                }
                             }
-                            task.Wait();
-
-                            // Отправка задания на непосредственно проверку
-                            task = new Task<bool>(() => IntegrityVerifier.VerifyHash(md5, fileHash.Value));
-                            _producerBuffer.SendAsync(task);
-                            task.Wait();
-
-                            // Добавление записи в результативный словарь
-                            results.Add(fileHash.Key, ((Task<bool>)task).Result);
+                            else
+                            {
+                                toRemove.Add(i);
+                            }
                         }
                     }
+                    for (int i = toRemove.Count - 1; i >= 0; i--)
+                    {
+                        checkList.RemoveAt(toRemove[i]);
+                    }
+                    toRemove.Clear();
+
+                    // Проверка, не надо ли открыть новый IO-поток
+                    checkIO++;
+                    if (_producerBuffer.Count == _queueSize)
+                    {
+                        busyIterations++;
+                    }
+                    if (checkIO == _checkForNewIOCooldown)
+                    {
+                        checkIO = 0;
+                        if (busyIterations < _checkForNewIOCooldown / 2)
+                        {
+                            IntegrityCheckInfo newCheckInfo = GetNewCheckInfo(keys);
+                            if (newCheckInfo != null)
+                            {
+                                checkList.Add(newCheckInfo);
+                            }
+                        }
+                        busyIterations = 0;
+                    }
                 }
-                catch (Exception exc)
+
+                // Ожидание всех завершающих заданий
+                Task.WaitAll(finalizingTasks.ToArray());
+
+                // Завершение работы с буфером
+                _producerBuffer.Complete();
+
+                // Сборка результата
+                foreach (IntegrityCheckInfo checkInfo in finishedChecks)
                 {
-                    Console.WriteLine($"Error while sending task to verify {fileHash.Key}: {exc.Message}");
+                    results.Add(checkInfo.FileHash.Key, ((Task<bool>)checkInfo.NextTask).Result);
+                    checkInfo.EndMD5();
                 }
             }
-
-            // Завершение работы с буфером отправки
-            _producerBuffer.Complete();
-
             return results;
+        }
+
+        /**
+         * <summary>Метод, возвращающий объект IntegrityCheckInfo для очередного файла из FileGroup.</summary>
+         * <param name="keys">Массив ключей словаря, содержащего пары (путь_к_файлу : хэш) в FileGroup.</param>
+         * <returns>Объект IntegrityCheckInfo, если всё прошло успешно. Иначе возвращает null.</returns>
+         */
+        private IntegrityCheckInfo GetNewCheckInfo(string[] keys)
+        {
+            bool isRead = false;
+            IntegrityCheckInfo newCheckInfo = null;
+            while ((!isRead) && (_filesCounter < _fileGroup.FilesHashes.Count))
+            {
+                string hash;
+                _fileGroup.FilesHashes.TryGetValue(keys[_filesCounter], out hash);
+                newCheckInfo = new IntegrityCheckInfo(new KeyValuePair<string, string>(keys[_filesCounter], hash));
+                _filesCounter++;
+                if (newCheckInfo.InitializationException == null)
+                {
+                    isRead = true;
+                }
+                else
+                {
+                    Console.WriteLine($"Error while trying to read {newCheckInfo.FileHash.Key} file: {newCheckInfo.InitializationException.Message}");
+                    _filesAmount--;
+                    newCheckInfo.EndIO();
+                    newCheckInfo.EndMD5();
+                }
+            }
+            if (isRead)
+            { 
+                return newCheckInfo; 
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }

@@ -31,29 +31,20 @@ namespace FileIntegrityController
                     Console.WriteLine("Sorting files by disks...");
                     FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
 
-                    // Создание блока Dataflow, который будет читать потребитель, и к которому будут подключены блоки производителей
-                    BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
-
                     // Создание производителей
                     Producer[] producers = new Producer[fileGroups.Length];
-                    for (int i = 0; i < producers.Length; i++)
-                    {
-                        producers[i] = new Producer(fileGroups[i], consumerBuffer);
-                    }
+                    int queueSize = Environment.TickCount;
 
                     // Создание потребителя
-                    List<BufferBlock<Task>> producerBuffers = new List<BufferBlock<Task>>();
+                    List<BufferBlock<(Task, Task)>> producerBuffers = new List<BufferBlock<(Task, Task)>>();
                     for (int i = 0; i < producers.Length; i++)
                     {
                         producerBuffers.Add(producers[i].ProducerBuffer);
                     }
-                    Consumer consumer = new Consumer(consumerBuffer, producerBuffers);
-
-                    // Запуск потребителя
-                    Task<Dictionary<string, bool>>[] producerTasks = new Task<Dictionary<string, bool>>[producers.Length];
-                    Task consumerTask = Task.Run(() => consumer.Execute());
+                    ConsumerController consumerController = new ConsumerController(producerBuffers);
 
                     // Запуск производителей
+                    Task<Dictionary<string, bool>>[] producerTasks = new Task<Dictionary<string, bool>>[producers.Length];
                     for (int i = 0; i < producerTasks.Length; i++)
                     {
                         var localProducer = producers[i];
@@ -61,7 +52,6 @@ namespace FileIntegrityController
                     }
 
                     // Ожидание результата
-                    consumerTask.Wait();
                     Task.WaitAll(producerTasks);
 
                     // Вывод результата

@@ -49,14 +49,11 @@ namespace FileIntegrityControllerTests
             }
             FileGroup fileGroup = new FileGroup("DISK1", filesHashes);
             Dictionary<string, bool> expected = new Dictionary<string, bool>() { { filesHashes.Keys.ToArray()[0], true }, { filesHashes.Keys.ToArray()[1], true } };
-            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
-            Producer producer = new Producer(fileGroup, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producer.ProducerBuffer });
+            Producer producer = new Producer(fileGroup, Environment.ProcessorCount);
+            ConsumerController consumer = new ConsumerController(new List<BufferBlock<(Task, Task)>>() { producer.ProducerBuffer });
 
             // Act
-            Task consumerTask = Task.Run(() => consumer.Execute());
             Task<Dictionary<string, bool>> producerTask = Task.Run(() => producer.Execute());
-            consumerTask.Wait();
             producerTask.Wait();
             Dictionary<string, bool> actual = producerTask.Result;
             File.Delete(testFilePath1);
@@ -103,14 +100,11 @@ namespace FileIntegrityControllerTests
             }
             FileGroup fileGroup = new FileGroup("DISK1", filesHashes);
             Dictionary<string, bool> expected = new Dictionary<string, bool>() { { filesHashes.Keys.ToArray()[0], true }, { filesHashes.Keys.ToArray()[1], false } };
-            BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
-            Producer producer = new Producer(fileGroup, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producer.ProducerBuffer });
+            Producer producer = new Producer(fileGroup, Environment.ProcessorCount);
+            ConsumerController consumer = new ConsumerController(new List<BufferBlock<(Task, Task)>>() { producer.ProducerBuffer });
 
             // Act
-            Task consumerTask = Task.Run(() => consumer.Execute());
             Task<Dictionary<string, bool>> producerTask = Task.Run(() => producer.Execute());
-            consumerTask.Wait();
             producerTask.Wait();
             Dictionary<string, bool> actual = producerTask.Result;
             File.Delete(testFilePath1);
@@ -170,15 +164,13 @@ namespace FileIntegrityControllerTests
             Dictionary<string, bool> expectedDisk1 = new Dictionary<string, bool>() { { filesHashesDisk1.Keys.ToArray()[0], true } };
             Dictionary<string, bool> expectedDisk2 = new Dictionary<string, bool>() { { filesHashesDisk2.Keys.ToArray()[0], true }, { filesHashesDisk2.Keys.ToArray()[1], true } };
             BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
-            Producer producerDisk1 = new Producer(fileGroupDisk1, consumerBuffer);
-            Producer producerDisk2 = new Producer(fileGroupDisk2, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
+            Producer producerDisk1 = new Producer(fileGroupDisk1, Environment.ProcessorCount / 2);
+            Producer producerDisk2 = new Producer(fileGroupDisk2, Environment.ProcessorCount / 2);
+            ConsumerController consumer = new ConsumerController(new List<BufferBlock<(Task, Task)>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
 
             // Act
-            Task consumerTask = Task.Run(() => consumer.Execute());
             Task<Dictionary<string, bool>> producerTask1 = Task.Run(() => producerDisk1.Execute());
             Task<Dictionary<string, bool>> producerTask2 = Task.Run(() => producerDisk2.Execute());
-            consumerTask.Wait();
             producerTask1.Wait();
             producerTask2.Wait();
             Dictionary<string, bool> actualDisk1 = producerTask1.Result;
@@ -250,15 +242,13 @@ namespace FileIntegrityControllerTests
             Dictionary<string, bool> expectedDisk1 = new Dictionary<string, bool>() { { filesHashesDisk1.Keys.ToArray()[0], false } };
             Dictionary<string, bool> expectedDisk2 = new Dictionary<string, bool>() { { filesHashesDisk2.Keys.ToArray()[0], true }, { filesHashesDisk2.Keys.ToArray()[1], false } };
             BufferBlock<Task> consumerBuffer = new BufferBlock<Task>();
-            Producer producerDisk1 = new Producer(fileGroupDisk1, consumerBuffer);
-            Producer producerDisk2 = new Producer(fileGroupDisk2, consumerBuffer);
-            Consumer consumer = new Consumer(consumerBuffer, new List<BufferBlock<Task>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
+            Producer producerDisk1 = new Producer(fileGroupDisk1, Environment.ProcessorCount / 2);
+            Producer producerDisk2 = new Producer(fileGroupDisk2, Environment.ProcessorCount / 2);
+            ConsumerController consumer = new ConsumerController(new List<BufferBlock<(Task, Task)>>() { producerDisk1.ProducerBuffer, producerDisk2.ProducerBuffer });
 
             // Act
-            Task consumerTask = Task.Run(() => consumer.Execute());
             Task<Dictionary<string, bool>> producerTask1 = Task.Run(() => producerDisk1.Execute());
             Task<Dictionary<string, bool>> producerTask2 = Task.Run(() => producerDisk2.Execute());
-            consumerTask.Wait();
             producerTask1.Wait();
             producerTask2.Wait();
             Dictionary<string, bool> actualDisk1 = producerTask1.Result;
