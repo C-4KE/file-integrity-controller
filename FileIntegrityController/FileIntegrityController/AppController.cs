@@ -33,11 +33,7 @@ namespace FileIntegrityController
 
                     // Создание производителей
                     Producer[] producers = new Producer[fileGroups.Length];
-                    int queueSize = Environment.ProcessorCount / producers.Length > 2 ? Environment.ProcessorCount / producers.Length : 2;
-                    for (int i = 0; i < producers.Length; i++)
-                    {
-                        producers[i] = new Producer(fileGroups[i], queueSize);
-                    }
+                    int queueSize = Environment.TickCount;
 
                     // Создание потребителя
                     List<BufferBlock<(Task, Task)>> producerBuffers = new List<BufferBlock<(Task, Task)>>();
