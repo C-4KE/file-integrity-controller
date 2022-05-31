@@ -25,7 +25,7 @@ namespace FileIntegrityController
          * <param name="fileGroup">Группа файлов, лежащая на одном диске.</param>
          * <param name="queueSize">Размер очереди для проверяемых порций файлов в Producer'е.</param>
          */
-        public Producer(FileGroup fileGroup, BufferBlock<Task> consumerBuffer, int queueSize)
+        public Producer(FileGroup fileGroup, int queueSize)
         {
             queueSize = queueSize > 0 ? queueSize : Environment.ProcessorCount;
             _queueSize = queueSize;
@@ -66,26 +66,29 @@ namespace FileIntegrityController
                 // Цикл отправки кусков файлов Consumer'ам
                 while (_filesAmount > 0)
                 {
+                    List<int> toRemove = new List<int>();
                     // Отправка кусков файлов уже открытых IO-потоков
                     for (int i = 0; i < checkList.Count; i++)
                     {
+                        IntegrityCheckInfo currentCheck = checkList[i];
                         byte[] buffer = new byte[_bufferSize];
                         int readAmount = 0;
-                        if ((readAmount = checkList[i].Stream.Read(buffer, 0, buffer.Length)) > 0)
+                        if ((readAmount = currentCheck.Stream.Read(buffer, 0, buffer.Length)) > 0)
                         {
-                            Task task = new Task(() => IntegrityVerifier.CheckPart(checkList[i].MD5Object, buffer, readAmount));
-                            checkList[i].SetNextTask(task);
-                            _producerBuffer.SendAsync((checkList[i].NextTask, checkList[i].PreviousTask));
+                            Task task = new Task(() => IntegrityVerifier.CheckPart(currentCheck.MD5Object, buffer, readAmount));
+                            currentCheck.SetNextTask(task);
+                            _producerBuffer.SendAsync((currentCheck.NextTask, currentCheck.PreviousTask));
                         }
                         else
                         {
                             // Отсылка завершающего задания
-                            Task task = new Task<bool>(() => IntegrityVerifier.VerifyHash(checkList[i].MD5Object, checkList[i].FileHash.Value));
-                            checkList[i].SetNextTask(task);
-                            finishedChecks.Add(checkList[i]);
-                            checkList[i].EndIO();               // Закрытие файлового потока
+                            Task task = new Task<bool>(() => IntegrityVerifier.VerifyHash(currentCheck.MD5Object, currentCheck.FileHash.Value));
+                            currentCheck.SetNextTask(task);
+                            finalizingTasks.Add(task);
+                            finishedChecks.Add(currentCheck);
+                            currentCheck.EndIO();               // Закрытие файлового потока
                             _filesAmount--;
-                            _producerBuffer.SendAsync((checkList[i].NextTask, checkList[i].PreviousTask));
+                            _producerBuffer.SendAsync((currentCheck.NextTask, currentCheck.PreviousTask));
 
                             // Получение нового объекта, хранящего данные о проверяемом файле
                             if (_filesCounter < _fileGroup.FilesHashes.Count)
@@ -95,9 +98,22 @@ namespace FileIntegrityController
                                 {
                                     checkList[i] = newCheckInfo;
                                 }
+                                else
+                                {
+                                    toRemove.Add(i);
+                                }
+                            }
+                            else
+                            {
+                                toRemove.Add(i);
                             }
                         }
                     }
+                    for (int i = toRemove.Count - 1; i >= 0; i--)
+                    {
+                        checkList.RemoveAt(toRemove[i]);
+                    }
+                    toRemove.Clear();
 
                     // Проверка, не надо ли открыть новый IO-поток
                     checkIO++;
