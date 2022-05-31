@@ -8,7 +8,7 @@ namespace FileIntegrityController
     /**
      * <summary>Класс, контролирующий работу Consumer'ов.</summary>
      */
-    class ConsumerController
+    public class ConsumerController
     {
         private ActionBlock<(Task, Task)> _consumers;
 
