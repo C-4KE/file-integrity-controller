@@ -12,6 +12,8 @@ namespace FileIntegrityController
 {
     public class PerformanceTests
     {
+        private static int _writeBufferSize = 400000;
+
         public static void RunTests()
         {
             // Arrange
@@ -241,7 +243,9 @@ namespace FileIntegrityController
             string testFilePath = "./Test" + number + ".txt";
             using (FileStream fstream = new FileStream(testFilePath, FileMode.Create))
             {
-                fstream.Write(Encoding.UTF8.GetBytes("123456789"));
+                byte[] buffer = new byte[200000];
+                (new Random()).NextBytes(buffer);
+                fstream.Write(buffer);
                 expected.Add(fstream.Name, true);
             }
             using (MD5 md5 = MD5.Create())
@@ -259,7 +263,9 @@ namespace FileIntegrityController
             string testFilePath = "./Test" + number + ".txt";
             using (FileStream fstream = new FileStream(testFilePath, FileMode.Create))
             {
-                fstream.Write(Encoding.UTF8.GetBytes("123456789"));
+                byte[] buffer = new byte[_writeBufferSize];
+                (new Random()).NextBytes(buffer);
+                fstream.Write(buffer);
                 expected.Add(fstream.Name, false);
             }
             using (MD5 md5 = MD5.Create())
@@ -272,7 +278,9 @@ namespace FileIntegrityController
             }
             using (FileStream fstream = new FileStream(testFilePath, FileMode.Create))
             {
-                fstream.Write(Encoding.UTF8.GetBytes("123"));
+                byte[] buffer = new byte[_writeBufferSize];
+                (new Random()).NextBytes(buffer);
+                fstream.Write(buffer);
             }
         }
     }
