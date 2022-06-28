@@ -63,10 +63,10 @@ namespace FileIntegrityController
                 {
                     try
                     {
-                        DriveInfo driveInfo = GetDriveInfo(fileHash.Key);
-                        if (driveInfo != null)
+                        string driveName = GetDriveName(fileHash.Key);
+                        if (driveName != null)
                         {
-                            string volume = driveInfo.Name;
+                            string volume = driveName;
                             if (volumeGroup.ContainsKey(volume))    // Уже встречали файл на этом разделе
                             {
                                 FileGroup fileGroup;
@@ -75,7 +75,7 @@ namespace FileIntegrityController
                             }
                             else   // Ещё не встречали файл на этом разделе
                             {
-                                string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveInfo);
+                                string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveName);
                                 if (fileGroups.Count == 0)
                                 {
                                     Dictionary<string, string> newDict = new Dictionary<string, string>();
@@ -130,11 +130,11 @@ namespace FileIntegrityController
         /**
          * <summary>Метод, возвращающий информацию о носителе, на котором находится файл.</summary>
          * <param name="path">Путь к файлу</param>
-         * <returns>Объект DriveInfo, если файл существует. В обратном случае - null.</returns>
+         * <returns>Имя раздела, если файл существует. В обратном случае - null.</returns>
          */
-        public static DriveInfo GetDriveInfo(string path)
+        public static string GetDriveName(string path)
         {
-            return File.Exists(path) ? new DriveInfo((new FileInfo(path)).Directory.Root.FullName) : null;
+            return File.Exists(path) ? (new DriveInfo((new FileInfo(path)).Directory.Root.FullName)).Name : null;
         }
     }
 }

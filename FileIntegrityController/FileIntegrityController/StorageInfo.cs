@@ -52,15 +52,15 @@ namespace FileIntegrityController
          * Так как в этом объекте перед UniqueId находится число в фигурных скобках, то начало до } включая выбрасывается.
          * - По UniqueId ищется объект в коллекции объектов MSFT_Disk. Из него берётся SerialNumber.
          * </remarks>
-         * <param name="driveInfo">Объект, хранящий информацию о проверяемом диске.</param>
+         * <param name="volumeName">Название раздела.</param>
          * <returns>Возвращает серийный номер диска.</returns>
          */
-        public string GetDiskSerialNumber(DriveInfo driveInfo)
+        public string GetDiskSerialNumber(string volumeName)
         {
             string serialNumber = "";
             try
             {
-                string driveName = driveInfo.Name.Split(new char[] { ':' })[0];
+                string driveName = volumeName.Split(new char[] { ':' })[0];
                 string uniqueId = "";
                 foreach (var rawDiskInfo in _msftPartition.Get())
                 {
@@ -81,7 +81,7 @@ namespace FileIntegrityController
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"Error while checking {driveInfo.Name} disk: {exc.Message}");
+                Console.WriteLine($"Error while checking {volumeName} disk: {exc.Message}");
             }
             return serialNumber;
         }
