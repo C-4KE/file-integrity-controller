@@ -34,6 +34,12 @@ namespace FileIntegrityController
                     // Создание производителей
                     Producer[] producers = new Producer[fileGroups.Count];
                     int queueSize = Environment.TickCount;
+                    int counter = 0;
+                    foreach (FileGroup fileGroup in fileGroups)
+                    {
+                        producers[counter] = new Producer(fileGroup, queueSize);
+                        counter++;
+                    }
 
                     // Создание потребителя
                     List<BufferBlock<(Task, Task)>> producerBuffers = new List<BufferBlock<(Task, Task)>>();
