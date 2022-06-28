@@ -47,9 +47,17 @@ namespace FileIntegrityController
 
         public override bool Equals(object obj)
         {
-            bool answer = (_diskSerialNumber == ((FileGroup)obj)._diskSerialNumber) && (_filesHashes.Count == ((FileGroup)obj)._filesHashes.Count) && (!_filesHashes.Except(((FileGroup)obj)._filesHashes).Any());
-            Console.WriteLine(answer);
-            return answer;
+            FileGroup fileGroup = obj as FileGroup;
+            if (fileGroup == null)
+            {
+                return false;
+            }
+            else
+            {
+                return (_diskSerialNumber == fileGroup._diskSerialNumber)
+                       && (_filesHashes.Count == fileGroup._filesHashes.Count)
+                       && (!_filesHashes.Except(fileGroup._filesHashes).Any());
+            }
         }
 
         public override int GetHashCode()
