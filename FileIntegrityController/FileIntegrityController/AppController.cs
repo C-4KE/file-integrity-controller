@@ -29,10 +29,10 @@ namespace FileIntegrityController
                 if (filesHashes.Count != 0)
                 {
                     Console.WriteLine("Sorting files by disks...");
-                    FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
+                    List<FileGroup> fileGroups = Parser.SortFilesByDisks(filesHashes);
 
                     // Создание производителей
-                    Producer[] producers = new Producer[fileGroups.Length];
+                    Producer[] producers = new Producer[fileGroups.Count];
                     int queueSize = Environment.TickCount;
 
                     // Создание потребителя

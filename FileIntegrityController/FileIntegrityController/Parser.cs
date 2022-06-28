@@ -51,13 +51,13 @@ namespace FileIntegrityController
          * <summary>Метод, сортирующий словарь с парами (имя_файла : хэш) по дискам.</summary>
          * <remarks>Если входной словарь не пустой, но содержит пары с несуществующими файлами / некорректными ключами, то они не добавляются в выходной массив.</remarks>
          * <param name="filesHashes">Словарь с парами (имя_файла : хэш).</param>
-         * <returns>Возвращает массив объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
+         * <returns>Возвращает лист объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
          */
-        public static FileGroup[] SortFilesByDisks(Dictionary<string, string> filesHashes)
+        public static List<FileGroup> SortFilesByDisks(Dictionary<string, string> filesHashes)
         {
             if (filesHashes.Count != 0)
             {
-                FileGroup[] fileGroups = null;
+                List<FileGroup> fileGroups = new List<FileGroup>();
                 Dictionary<string, FileGroup> volumeGroup = new Dictionary<string, FileGroup>();
                 foreach (KeyValuePair<string, string> fileHash in filesHashes)
                 {
@@ -76,13 +76,13 @@ namespace FileIntegrityController
                             else   // Ещё не встречали файл на этом разделе
                             {
                                 string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveInfo);
-                                if (fileGroups == null)
+                                if (fileGroups.Count == 0)
                                 {
-                                    fileGroups = new FileGroup[1];
                                     Dictionary<string, string> newDict = new Dictionary<string, string>();
                                     newDict.Add(fileHash.Key, fileHash.Value);
-                                    fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
-                                    volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                    FileGroup newGroup = new FileGroup(serialNumber, newDict);
+                                    fileGroups.Add(newGroup);
+                                    volumeGroup.Add(volume, newGroup);
                                 }
                                 else
                                 {
@@ -99,11 +99,11 @@ namespace FileIntegrityController
                                     }
                                     if (!isGroupExists)     // Нет группы с тем же серийным номером, что и серийный номер диска, на котором находится раздел
                                     {
-                                        Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
                                         Dictionary<string, string> newDict = new Dictionary<string, string>();
                                         newDict.Add(fileHash.Key, fileHash.Value);
-                                        fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
-                                        volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                        FileGroup newGroup = new FileGroup(serialNumber, newDict);
+                                        fileGroups.Add(newGroup);
+                                        volumeGroup.Add(volume, newGroup);
                                     }
                                 }
                             }
@@ -123,7 +123,7 @@ namespace FileIntegrityController
             else
             {
                 Console.WriteLine("Failed to sort files\' hashes by disks: dictionary is empty.");
-                return null;
+                return new List<FileGroup>();
             }
         }
 
