@@ -12,28 +12,36 @@ namespace FileIntegrityController
      */
     public class AppController
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         /**
          * <summary>Метод, управляющий ходом работы программы.</summary>
          */
         public static void ManageApp()
         {
-            Console.WriteLine("Program has started.");
+            logger.Info("Program has started.");
             // Получение адреса JSON файла из config файла.
-            Console.WriteLine("Reading a path to JSON file from config...");
+            logger.Info("Reading a path to JSON file from config");
             string jsonPath = ReadConfig();
             if (jsonPath != null)
             {
                 // Получение данных из JSON файла
-                Console.WriteLine("Parsing JSON...");
+                logger.Info("Parsing JSON");
                 Dictionary<string, string> filesHashes = Parser.ParseJSON(jsonPath);
                 if (filesHashes.Count != 0)
                 {
-                    Console.WriteLine("Sorting files by disks...");
-                    FileGroup[] fileGroups = Parser.SortFilesByDisks(filesHashes);
+                    logger.Info("Sorting files by disks");
+                    List<FileGroup> fileGroups = Parser.SortFilesByDisks(filesHashes);
 
                     // Создание производителей
-                    Producer[] producers = new Producer[fileGroups.Length];
+                    Producer[] producers = new Producer[fileGroups.Count];
                     int queueSize = Environment.TickCount;
+                    int counter = 0;
+                    foreach (FileGroup fileGroup in fileGroups)
+                    {
+                        producers[counter] = new Producer(fileGroup, queueSize);
+                        counter++;
+                    }
 
                     // Создание потребителя
                     List<BufferBlock<(Task, Task)>> producerBuffers = new List<BufferBlock<(Task, Task)>>();
@@ -61,7 +69,7 @@ namespace FileIntegrityController
             }
             else
             {
-                Console.WriteLine("There are no files to check.");
+                logger.Info("There are no files to check.");
             }
         }
 
@@ -74,13 +82,13 @@ namespace FileIntegrityController
             string jsonPath = ConfigurationManager.AppSettings.Get("JSONPath");
             if (jsonPath == null)
             {
-                Console.WriteLine("Program has failed to read a path to JSON file.");
+                logger.Warn("Program has failed to read a path to JSON file.");
             }
             else
             {
                 if (!File.Exists(jsonPath))
                 {
-                    Console.WriteLine("File \"" + jsonPath + "\" does not exist.");
+                    logger.Warn("File \"" + jsonPath + "\" does not exist.");
                     jsonPath = null;
                 }
             }

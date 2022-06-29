@@ -10,6 +10,8 @@ namespace FileIntegrityController
      */
     public class Parser
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         /**
          * <summary>Метод, который считывает пары (имя_файла : хэш) из JSON'а.</summary>
          * <param name="jsonPath">Путь к JSON файлу.</param>
@@ -29,19 +31,19 @@ namespace FileIntegrityController
                     }
                     catch (Exception exc)
                     {
-                        Console.WriteLine("Failed to deserialize Json string: " + exc.Message);
+                        logger.Error(exc, "Failed to deserialize Json string");
                         fileHash = null;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("There are no <file_name : hash> pairs in Json file.");
+                    logger.Info("There are no <file_name : hash> pairs in Json file.");
                     fileHash = null;
                 }
             }
             else
             {
-                Console.WriteLine("File \"" + jsonPath + "\" does not exist.");
+                logger.Warn("File \"" + jsonPath + "\" does not exist.");
                 fileHash = null;
             }
             return fileHash;
@@ -51,22 +53,22 @@ namespace FileIntegrityController
          * <summary>Метод, сортирующий словарь с парами (имя_файла : хэш) по дискам.</summary>
          * <remarks>Если входной словарь не пустой, но содержит пары с несуществующими файлами / некорректными ключами, то они не добавляются в выходной массив.</remarks>
          * <param name="filesHashes">Словарь с парами (имя_файла : хэш).</param>
-         * <returns>Возвращает массив объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
+         * <returns>Возвращает лист объектов FileGroup, каждый из которых хранит информацию о файлах с одного диска. Если входной словарь пустой, возвращает null.</returns>
          */
-        public static FileGroup[] SortFilesByDisks(Dictionary<string, string> filesHashes)
+        public static List<FileGroup> SortFilesByDisks(Dictionary<string, string> filesHashes)
         {
             if (filesHashes.Count != 0)
             {
-                FileGroup[] fileGroups = null;
+                List<FileGroup> fileGroups = new List<FileGroup>();
                 Dictionary<string, FileGroup> volumeGroup = new Dictionary<string, FileGroup>();
                 foreach (KeyValuePair<string, string> fileHash in filesHashes)
                 {
                     try
                     {
-                        DriveInfo driveInfo = GetDriveInfo(fileHash.Key);
-                        if (driveInfo != null)
+                        string driveName = GetDriveName(fileHash.Key);
+                        if (driveName != null)
                         {
-                            string volume = driveInfo.Name;
+                            string volume = driveName;
                             if (volumeGroup.ContainsKey(volume))    // Уже встречали файл на этом разделе
                             {
                                 FileGroup fileGroup;
@@ -75,14 +77,14 @@ namespace FileIntegrityController
                             }
                             else   // Ещё не встречали файл на этом разделе
                             {
-                                string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveInfo);
-                                if (fileGroups == null)
+                                string serialNumber = (new StorageInfo()).GetDiskSerialNumber(driveName);
+                                if (fileGroups.Count == 0)
                                 {
-                                    fileGroups = new FileGroup[1];
                                     Dictionary<string, string> newDict = new Dictionary<string, string>();
                                     newDict.Add(fileHash.Key, fileHash.Value);
-                                    fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
-                                    volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                    FileGroup newGroup = new FileGroup(serialNumber, newDict);
+                                    fileGroups.Add(newGroup);
+                                    volumeGroup.Add(volume, newGroup);
                                 }
                                 else
                                 {
@@ -99,42 +101,42 @@ namespace FileIntegrityController
                                     }
                                     if (!isGroupExists)     // Нет группы с тем же серийным номером, что и серийный номер диска, на котором находится раздел
                                     {
-                                        Array.Resize<FileGroup>(ref fileGroups, fileGroups.Length + 1);
                                         Dictionary<string, string> newDict = new Dictionary<string, string>();
                                         newDict.Add(fileHash.Key, fileHash.Value);
-                                        fileGroups[fileGroups.Length - 1] = new FileGroup(serialNumber, newDict);
-                                        volumeGroup.Add(volume, fileGroups[fileGroups.Length - 1]);
+                                        FileGroup newGroup = new FileGroup(serialNumber, newDict);
+                                        fileGroups.Add(newGroup);
+                                        volumeGroup.Add(volume, newGroup);
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: this file does not exist.");
+                            logger.Info("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: this file does not exist.");
                         }
                     }
                     catch (Exception exc)
                     {
-                        Console.WriteLine("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: " + exc.Message);
+                        logger.Error(exc, "Failed to add pair <{Key}; {Value}>", fileHash.Key, fileHash.Value);
                     }
                 }
                 return fileGroups;
             }
             else
             {
-                Console.WriteLine("Failed to sort files\' hashes by disks: dictionary is empty.");
-                return null;
+                logger.Info("Failed to sort files\' hashes by disks: dictionary is empty.");
+                return new List<FileGroup>();
             }
         }
 
         /**
          * <summary>Метод, возвращающий информацию о носителе, на котором находится файл.</summary>
          * <param name="path">Путь к файлу</param>
-         * <returns>Объект DriveInfo, если файл существует. В обратном случае - null.</returns>
+         * <returns>Имя раздела, если файл существует. В обратном случае - null.</returns>
          */
-        public static DriveInfo GetDriveInfo(string path)
+        public static string GetDriveName(string path)
         {
-            return File.Exists(path) ? new DriveInfo((new FileInfo(path)).Directory.Root.FullName) : null;
+            return File.Exists(path) ? (new DriveInfo((new FileInfo(path)).Directory.Root.FullName)).Name : null;
         }
     }
 }

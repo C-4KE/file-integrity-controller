@@ -84,31 +84,19 @@ namespace FileIntegrityControllerTests
         }
 
         [TestMethod]
-        public void GetDriveInfo_ExistingFile_ReturnIsDriveInfo()
+        public void GetDriveInfo_ExistingFile_ReturnIsDriveName()
         {
             // Arrange
             string testFilePath = "./Test.txt";
             using (FileStream fstream = new FileStream(testFilePath, FileMode.Create)) { }
-            DriveInfo expected = new DriveInfo((new FileInfo(testFilePath)).Directory.Root.FullName);
+            string expected = (new DriveInfo((new FileInfo(testFilePath)).Directory.Root.FullName)).Name;
 
             // Act
-            DriveInfo actual = Parser.GetDriveInfo(testFilePath);
+            string actual = Parser.GetDriveName(testFilePath);
 
             // Assert
-            Assert.IsTrue(DriveInfoEquality(expected, actual));
+            Assert.IsTrue(expected == actual);
             File.Delete(testFilePath);
-        }
-
-        private bool DriveInfoEquality(DriveInfo first, DriveInfo second)
-        {
-            return (first.AvailableFreeSpace == second.AvailableFreeSpace) &&
-                   (first.DriveFormat == second.DriveFormat) &&
-                   (first.DriveType == second.DriveType) &&
-                   (first.IsReady == second.IsReady) &&
-                   (first.Name == second.Name) &&
-                   (first.TotalFreeSpace == second.TotalFreeSpace) &&
-                   (first.TotalSize == second.TotalSize) &&
-                   (first.VolumeLabel == second.VolumeLabel);
         }
 
         [TestMethod]
@@ -118,7 +106,7 @@ namespace FileIntegrityControllerTests
             string fakePath = "Incorrect path";
 
             // Act
-            DriveInfo actual = Parser.GetDriveInfo(fakePath);
+            string actual = Parser.GetDriveName(fakePath);
 
             // Assert
             Assert.IsNull(actual);
@@ -136,14 +124,14 @@ namespace FileIntegrityControllerTests
             Dictionary<string, string> input = new Dictionary<string, string>();
             input.Add(testFilePath1, "Test1");
             input.Add(testFilePath2, "Test2");
-            FileGroup[] expected = new FileGroup[1];
-            expected[0] = new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveInfo(testFilePath1)), input);
+            List<FileGroup> expected = new List<FileGroup>();
+            expected.Add(new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveName(testFilePath1)), input));
 
             // Act
-            FileGroup[] actual = Parser.SortFilesByDisks(input);
+            List<FileGroup> actual = Parser.SortFilesByDisks(input);
 
             // Assert
-            Assert.IsTrue((actual.Length == expected.Length) && (actual[0].Equals(expected[0])));
+            Assert.IsTrue((actual.Count == expected.Count) && (actual[0].Equals(expected[0])));
             File.Delete(testFilePath1);
             File.Delete(testFilePath2);
         }
@@ -159,19 +147,19 @@ namespace FileIntegrityControllerTests
             Dictionary<string, string> input = new Dictionary<string, string>();
             input.Add(testFilePath1, "Test1");
             input.Add(testFilePath2, "Test2");
-            FileGroup[] expected = new FileGroup[1];
-            expected[0] = new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveInfo(testFilePath1)), new Dictionary<string, string>() { { testFilePath1, "Test1" } });
+            List<FileGroup> expected = new List<FileGroup>();
+            expected.Add(new FileGroup((new StorageInfo()).GetDiskSerialNumber(Parser.GetDriveName(testFilePath1)), new Dictionary<string, string>() { { testFilePath1, "Test1" } }));
 
             // Act
-            FileGroup[] actual = Parser.SortFilesByDisks(input);
+            List<FileGroup> actual = Parser.SortFilesByDisks(input);
 
             // Assert
-            Assert.IsTrue((actual.Length == expected.Length) && (actual[0].Equals(expected[0])));
+            Assert.IsTrue((actual.Count == expected.Count) && (actual[0].Equals(expected[0])));
             File.Delete(testFilePath1);
         }
 
         [TestMethod]
-        public void SortFilesByDisks_DictionaryWithIncorrectValues_ReturnIsNull()
+        public void SortFilesByDisks_DictionaryWithIncorrectValues_ReturnIsEmptyList()
         {
             // Arrange
             string testFilePath1 = "Incorrect data 1";
@@ -182,23 +170,23 @@ namespace FileIntegrityControllerTests
             input.Add(testFilePath2, "Test2");
 
             // Act
-            FileGroup[] actual = Parser.SortFilesByDisks(input);
+            List<FileGroup> actual = Parser.SortFilesByDisks(input);
 
             // Assert
-            Assert.IsNull(actual);
+            Assert.IsTrue(actual.Count == 0);
         }
 
         [TestMethod]
-        public void SortFilesByDisks_EmptyDictionary_ReturnIsNull()
+        public void SortFilesByDisks_EmptyDictionary_ReturnIsEmptyList()
         {
             // Arrange
             Dictionary<string, string> input = new Dictionary<string, string>();
 
             // Act
-            FileGroup[] actual = Parser.SortFilesByDisks(input);
+            List<FileGroup> actual = Parser.SortFilesByDisks(input);
 
             // Assert
-            Assert.IsNull(actual);
+            Assert.IsTrue(actual.Count == 0);
         }
     }
 }

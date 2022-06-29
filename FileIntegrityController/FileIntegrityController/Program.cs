@@ -5,6 +5,7 @@
         static void Main(string[] args)
         {
             AppController.ManageApp();
+            NLog.LogManager.Shutdown();
         }
     }
 }
