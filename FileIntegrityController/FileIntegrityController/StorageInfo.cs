@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Management;
-using System.IO;
 
 namespace FileIntegrityController
 {
@@ -9,6 +8,8 @@ namespace FileIntegrityController
      */
     public class StorageInfo
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         ManagementObjectSearcher _msftPartition;
         ManagementObjectSearcher _msftDisk;
 
@@ -81,7 +82,7 @@ namespace FileIntegrityController
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"Error while checking {volumeName} disk: {exc.Message}");
+                logger.Error(exc, "Error while checking {volumeName} disk", volumeName);
             }
             return serialNumber;
         }

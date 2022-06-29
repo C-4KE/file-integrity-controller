@@ -11,6 +11,8 @@ namespace FileIntegrityController
      */
     public class Producer
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         private FileGroup _fileGroup;                           // Группа файлов
         private BufferBlock<(Task, Task)> _producerBuffer;      // Буффер, куда загружаются задания (следующее задание, предыдущее задание)
         private int _queueSize;                                 // Размер очереди буффера
@@ -173,7 +175,7 @@ namespace FileIntegrityController
                 }
                 else
                 {
-                    Console.WriteLine($"Error while trying to read {newCheckInfo.FileHash.Key} file: {newCheckInfo.InitializationException.Message}");
+                    logger.Warn($"Error while trying to read {newCheckInfo.FileHash.Key} file: {newCheckInfo.InitializationException.Message}");
                     _filesAmount--;
                     newCheckInfo.EndIO();
                     newCheckInfo.EndMD5();

@@ -10,6 +10,8 @@ namespace FileIntegrityController
      */
     public class Parser
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         /**
          * <summary>Метод, который считывает пары (имя_файла : хэш) из JSON'а.</summary>
          * <param name="jsonPath">Путь к JSON файлу.</param>
@@ -29,19 +31,19 @@ namespace FileIntegrityController
                     }
                     catch (Exception exc)
                     {
-                        Console.WriteLine("Failed to deserialize Json string: " + exc.Message);
+                        logger.Error(exc, "Failed to deserialize Json string");
                         fileHash = null;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("There are no <file_name : hash> pairs in Json file.");
+                    logger.Info("There are no <file_name : hash> pairs in Json file.");
                     fileHash = null;
                 }
             }
             else
             {
-                Console.WriteLine("File \"" + jsonPath + "\" does not exist.");
+                logger.Warn("File \"" + jsonPath + "\" does not exist.");
                 fileHash = null;
             }
             return fileHash;
@@ -110,19 +112,19 @@ namespace FileIntegrityController
                         }
                         else
                         {
-                            Console.WriteLine("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: this file does not exist.");
+                            logger.Info("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: this file does not exist.");
                         }
                     }
                     catch (Exception exc)
                     {
-                        Console.WriteLine("Failed to add pair <" + fileHash.Key + "; " + fileHash.Value + ">: " + exc.Message);
+                        logger.Error(exc, "Failed to add pair <{Key}; {Value}>", fileHash.Key, fileHash.Value);
                     }
                 }
                 return fileGroups;
             }
             else
             {
-                Console.WriteLine("Failed to sort files\' hashes by disks: dictionary is empty.");
+                logger.Info("Failed to sort files\' hashes by disks: dictionary is empty.");
                 return new List<FileGroup>();
             }
         }
