@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace FileIntegrityController
@@ -47,16 +48,25 @@ namespace FileIntegrityController
         public override bool Equals(object obj)
         {
             FileGroup fileGroup = obj as FileGroup;
+
             if (fileGroup == null)
             {
                 return false;
             }
-            else
+
+            if (Object.ReferenceEquals(this, fileGroup))
             {
-                return (_diskSerialNumber == fileGroup._diskSerialNumber)
-                       && (_filesHashes.Count == fileGroup._filesHashes.Count)
-                       && (!_filesHashes.Except(fileGroup._filesHashes).Any());
+                return true;
             }
+
+            if (this.GetType() != fileGroup.GetType())
+            {
+                return false;
+            }
+
+            return (_diskSerialNumber == fileGroup._diskSerialNumber)
+                    && (_filesHashes.Count == fileGroup._filesHashes.Count)
+                    && (!_filesHashes.Except(fileGroup._filesHashes).Any());
         }
 
         public override int GetHashCode()
